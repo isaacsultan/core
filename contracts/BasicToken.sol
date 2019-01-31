@@ -14,13 +14,12 @@ contract BasicTokenFactory {
 
     ERC777[] public basicTokens;
     mapping(address => bool) public basicTokenRegistry;
-    mapping(bytes32 => address) public contracts;
 
     constructor(address _adminRole) public {
         adminRole.add(_adminRole);
     }
 
-    event NewBasicToken(string _name, string _symbol, uint256 _granularity, uint256 _initialSupply);
+    event NewBasicToken(string name, string symbol, uint256 granularity, uint256 initialSupply);
 
     function makeBasicToken
     (
@@ -35,13 +34,13 @@ contract BasicTokenFactory {
     {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         ERC777 newContract = new ERC777(_name, _symbol, _granularity, _defaultOperators, _burnOperator, _initialSupply, "", "");
-        
+
         basicTokens.push(newContract);
         basicTokenRegistry[address(newContract)] = true;
         emit NewBasicToken(_name, _symbol, _granularity, _initialSupply);
     }
 
-    function verify(address contractAddress) public returns (bool) {
+    function verify(address contractAddress) public view returns (bool) {
         return basicTokenRegistry[contractAddress];
     }
 }
