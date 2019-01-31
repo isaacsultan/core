@@ -48,7 +48,7 @@ contract ManagingDirector {
     }
 
     // --- Agreement ---
-
+    event ManagingDirectorSender(address);
     function originateAgreement(
         bytes32 _product,
         address _owner
@@ -56,6 +56,7 @@ contract ManagingDirector {
         public 
         returns (uint)
     {
+        emit ManagingDirectorSender(msg.sender);
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
         Agreement storage agree = agreements[agreementId];
         agree.product = _product;

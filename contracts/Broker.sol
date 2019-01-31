@@ -61,6 +61,7 @@ contract Broker {
     mapping (bytes32 => bytes32) public productToUnderlying;
 
     event ProductDebt(uint, int);
+    event NewProductType(bytes32 productType, bytes32 underlyingType);
 
     constructor(address _managingDirector, address _btFactory, address _compliance, address _ethTeller, address _erc20TellerFactory, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -74,11 +75,14 @@ contract Broker {
     function approveProduct(bytes32 _productType, bytes32 _underlyingType) public {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         productToUnderlying[_productType] = _underlyingType;
+        emit NewProductType(_productType, _underlyingType);
     }
 
+    event BrokerSender(address);
     function agree(bytes32 _product) public returns (uint) {
         uint agreementId = managingDirector.originateAgreement(_product, msg.sender);
         IBasicToken(basicTokenFactory.contracts("delta")).authorizeOperator(address(this)); 
+        emit BrokerSender(msg.sender);
         return agreementId;
     }
 

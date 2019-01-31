@@ -10,7 +10,6 @@ const ManagingDirector = artifacts.require('MockManagingDirector');
 const ProductTeller = artifacts.require('ProductTeller');
 
 const Erc20Teller = require('Erc20Teller');
-const ManagingDirector = require('MockManagingDirector');
 const BasicToken = require('MockBasicToken');
 
 contract('Erc20Teller', function ([_, adminRole]) {

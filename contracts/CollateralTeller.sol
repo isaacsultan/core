@@ -9,6 +9,7 @@ contract IErc20 {
 }
 
 
+
 contract IManagingDirector {
     function modifyClientCollateralBalance(bytes32, address, int) public;
     function clientCollateral(address, bytes32) public view returns (uint);
@@ -21,7 +22,6 @@ contract Erc20TellerFactory {
     
     Erc20Teller[] public erc20Tellers;
     mapping(address => bool) public erc20TellerRegistry;
-    mapping(bytes32 => address) public contracts;
 
     constructor(address _adminRole) public {
         adminRole.add(_adminRole);

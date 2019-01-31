@@ -1,8 +1,15 @@
-const BigNumber = web3.BigNumber;
-
-const should = require('chai')
-  .use(require('chai-bignumber')(BigNumber))
-  .should();
+const {
+    BN,
+    expectEvent,
+    shouldFail,
+    constants,
+    balance,
+    send,
+    ether
+  } = require("openzeppelin-test-helpers");
+  const toBytes = web3.utils.utf8ToHex;
+  const padRight = web3.utils.padRight;
+  
 
 const Economics = require('Economics');
 
