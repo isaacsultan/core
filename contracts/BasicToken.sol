@@ -7,7 +7,6 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 
 
-
 contract BasicTokenFactory {
     using Roles for Roles.Role;
     Roles.Role private adminRole;
