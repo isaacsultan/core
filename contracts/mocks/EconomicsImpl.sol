@@ -1,3 +1,4 @@
+//solhint-disable indent
 pragma solidity ^0.5.0;
 
 import "../Economics.sol";
@@ -12,7 +13,6 @@ contract EconomicsImpl {
     )
     public pure returns (bool)
     {
-        uint256 liquidationRatio, uint256 collateralBalance, productDebt) {
         return Economics.collateralized(liquidationRatio, collateralBalance, productDebt);
     }
 

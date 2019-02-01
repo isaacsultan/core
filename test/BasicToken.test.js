@@ -12,8 +12,8 @@ const toBytes = web3.utils.utf8ToHex;
 const BasicTokenFactory = artifacts.require("BasicTokenFactory");
 
 contract("BasicToken", function([_, adminRole]) {
-  const name = "MakerDAO_DAI";
-  const symbol = "DAI";
+  const name = "ConverseTrackingBitcoin";
+  const symbol = "CTB";
   const granularity = new BN(18);
   const burnOperator = adminRole;
   const approvedOperators = [adminRole];

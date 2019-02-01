@@ -49,7 +49,6 @@ contract Liquidator {
         emit ResetLiquidaton(agreementId, now);
     }
 
-    
 
     // function initiateCddLiquidation(bytes32 collateralType, bytes32 cdd) public returns (uint id) {
         
@@ -69,6 +68,4 @@ contract Liquidator {
 
         
     // }
-
-
 }

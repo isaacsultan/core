@@ -95,6 +95,8 @@ contract EthTeller {
     uint public liquidityFee; //wad
     uint public constant ONE = 10**27;
 
+    event CollateralParameters(bytes32 collateralType, uint liquidityRatio, uint liquidityFee);
+
     constructor(address _managingDirector, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
         adminRole.add(_adminRole);
@@ -104,6 +106,7 @@ contract EthTeller {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         liquidityRatio = _liquidityRatio;
         liquidityFee = _liquidationFee;
+        emit CollateralParameters(collateralType, _liquidityRatio, _liquidationFee);
     }
 
     function deposit() public payable { //TODO: set a minimum amount
