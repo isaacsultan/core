@@ -53,8 +53,8 @@ contract ManagingDirector {
     // --- Agreement ---
     event ManagingDirectorSender(address);
     function originateAgreement(
-        bytes32 _product,
-        address _owner
+        address _owner,
+        bytes32 _product
     )
         public 
         returns (uint)
@@ -68,6 +68,7 @@ contract ManagingDirector {
         return agreementId++;
     }
 
+    //TODO: Fix for negative amounts
     function modifyAgreementCollateral(
         uint _id, 
         bytes32 _collateral, 
