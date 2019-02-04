@@ -7,7 +7,7 @@ import "./Economics.sol";
 
 
 contract IManagingDirector {
-    function originateAgreement(bytes32, address) public returns (uint);
+    function originateAgreement(address, bytes32) public returns (uint);
     function modifyAgreementCollateral(uint256, bytes32, int) public;
     function collaterals(bytes32) public view returns (uint256, uint256, uint256);
     function productToUnderlying(bytes32) public view returns (bytes32);
@@ -62,6 +62,7 @@ contract Broker {
 
     event ProductDebt(uint, int);
     event NewProductType(bytes32 productType, bytes32 underlyingType);
+    event NewAgreement(address client, uint id, bytes32 product);
 
     constructor(address _managingDirector, address _btFactory, address _compliance, address _ethTeller, address _erc20TellerFactory, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -78,11 +79,10 @@ contract Broker {
         emit NewProductType(_productType, _underlyingType);
     }
 
-    event BrokerSender(address);
     function agree(bytes32 _product) public returns (uint) {
-        uint agreementId = managingDirector.originateAgreement(_product, msg.sender);
-        IBasicToken(basicTokenFactory.contracts("delta")).authorizeOperator(address(this)); 
-        emit BrokerSender(msg.sender);
+        uint agreementId = managingDirector.originateAgreement(msg.sender, _product);
+        //IBasicToken(basicTokenFactory.contracts("delta")).authorizeOperator(address(this));  //TODO
+        emit NewAgreement(msg.sender, agreementId, _product);
         return agreementId;
     }
 
