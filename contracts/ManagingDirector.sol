@@ -9,12 +9,11 @@ contract ManagingDirector {
 
     using Roles for Roles.Role;
     Roles.Role private adminRole;
-    Roles.Role private brokerRole;
+    Roles.Role private brokerRole; //TODO: Rename
 
-    constructor(bytes32 _assetClass, address _adminRole, address _brokerRole) public {
+    constructor(bytes32 _assetClass, address _adminRole) public {
         assetClass = _assetClass;
         adminRole.add(_adminRole);
-        brokerRole.add(_brokerRole);
     }
 
     struct Agreement {
@@ -32,18 +31,22 @@ contract ManagingDirector {
     mapping (uint256 => address) public agreementOwner; 
     mapping (uint256 => mapping(bytes32 => uint256)) public agreementCollateralAmount;
     mapping (uint256 => mapping(bytes32 => uint256)) public collateralPosition; //TODO: refactor
-    mapping (bytes32 => mapping(bytes32 => uint256)) public clientCollateral;
+    mapping (address => mapping(bytes32 => uint256)) public clientCollateral; // wad
     
     // --- Administration ---
+    function addBrokerRole(address _brokerRole) external {
+        require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
+        brokerRole.add(_brokerRole);
+    }
 
     function modifyClientCollateralBalance(
+        address _address, 
         bytes32 _collateral, 
-        bytes32 _address, 
         int256 _amount
     ) 
         public 
     {
-        require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
+        require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
         clientCollateral[_address][_collateral] = DSMath.add(clientCollateral[_address][_collateral], _amount);
     }
 
