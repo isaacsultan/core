@@ -1,14 +1,8 @@
 const {
   BN,
-  expectEvent,
-  shouldFail,
-  constants,
-  balance,
-  send,
-  ether
 } = require("openzeppelin-test-helpers");
-const toBytes = web3.utils.utf8ToHex;
-const padRight = web3.utils.padRight;
+
+const { wad, ray, wadToNumber } = require("./fixedPoint");
 
 const Economics = artifacts.require("EconomicsImpl");
 
@@ -18,19 +12,23 @@ contract("Economics", function() {
   });
   describe("collateralized()", function() {
     it("should return true when liquidation ratio >= collateralization ratio", async function() {
-      const lr = new BN(15e17)
-      const cb = new BN(1e16)
-      const pd = new BN(12e17)
-
+      const lr = ray(15, 1);
+      const cb = wad(200, 0);
+      const pd = wad(180, 0);
       (await this.economics.collateralized(lr, cb, pd)).should.be.true;
     });
   });
   describe("dynamicDebt()", function() {
     it("should return the new dynamic debt", async function() {
-      const debt = await this.economics.dynamicDebt(500, 501, 400, 405, 2);
-      const expectedDebt = 2 * ((1 + 2 * (1 - (501 - 500))) / (405 - 400));
-
-      debt.should.be.equal(expectedDebt);
+      const up = wad(500, 0);
+      const newUp = wad(450, 0);
+      const tp = wad(490, 0);
+      const newTp = wad(486, 0);
+      const pd = wad(2, 0);
+  
+      const debt = await this.economics.dynamicDebt(up, newUp, tp, newTp, pd);
+      //2.419753086419753086419753086419753086419753086419753086419 ...
+      debt.toString().should.be.equal("2419753086419753086");
     });
   });
 });

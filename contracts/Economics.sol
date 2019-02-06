@@ -6,7 +6,8 @@ import "./Math.sol";
 
 library Economics {
 
-    uint constant RAY = 10 ** 27;
+    uint public constant WAD = 10 ** 18;
+    uint public constant RAY = 10 ** 27;
 
     function collateralized(
         uint256 liquidationRatio,
@@ -20,7 +21,7 @@ library Economics {
         return liquidationRatio >= DSMath.ray((DSMath.wdiv(collateralBalance, productDebt))); 
     }
 
-    function dynamicDebt
+     function dynamicDebt
     (
         uint256 up,
         uint256 _newUp,
@@ -33,11 +34,11 @@ library Economics {
         returns (uint)
     {
         
-        uint changeInUnderlying = DSMath.rdiv(_newUp, up);
-        uint changeInTarget = DSMath.rdiv(_newTp, tp);
-        uint numerator = DSMath.add(1 ** RAY, DSMath.wmul(2**RAY, DSMath.sub(1**RAY, changeInUnderlying)));
+        uint changeInUnderlying = DSMath.wdiv(_newUp, up);
+        uint changeInTarget = DSMath.wdiv(_newTp, tp);
+        uint numerator = DSMath.add(WAD, DSMath.wmul(2*WAD, DSMath.sub(WAD, changeInUnderlying)));
 
-        uint debt = DSMath.rmul(_productDebt, DSMath.rdiv(numerator, changeInTarget));
+        uint debt = DSMath.wmul(_productDebt, DSMath.wdiv(numerator, changeInTarget));
         return debt;
     }
 }
