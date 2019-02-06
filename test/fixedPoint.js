@@ -12,4 +12,8 @@ function wad(number, precision) {
   return n.mul(new BN(10).pow(new BN(e)));
 }
 
-module.exports = { ray: ray, wad: wad };
+function wadToNumber(wad) {
+  return wad.div(new BN(10).pow(new BN(18)))
+}
+
+module.exports = { ray: ray, wad: wad, wadToNumber: wadToNumber };
