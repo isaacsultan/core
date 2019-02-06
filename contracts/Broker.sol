@@ -12,15 +12,16 @@ contract IManagingDirector {
     function collaterals(bytes32) public view returns (uint256, uint256, uint256);
     function productToUnderlying(bytes32) public view returns (bytes32);
     function agreements(uint256) public view returns (bytes32, bytes32[] memory, uint, uint, uint);
+    function modifyAgreementOwner(uint, address) public;
+    function agreementOwner(uint) public view returns (address);
 }
-
 
 contract IBasicTokenFactory {
-    function contracts(bytes32) public view returns (address);
+    function basicTokens(uint) public view returns (IERC777);
 }
 
 
-contract IBasicToken {
+contract IERC777 {
     function authorizeOperator(address) public;
 }
 
@@ -63,6 +64,7 @@ contract Broker {
     event ProductDebt(uint, int);
     event NewProductType(bytes32 productType, bytes32 underlyingType);
     event NewAgreement(address client, uint id, bytes32 product);
+    event AgreementTransfer(uint id, address from, address to);
 
     constructor(address _managingDirector, address _btFactory, address _compliance, address _ethTeller, address _erc20TellerFactory, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -81,9 +83,15 @@ contract Broker {
 
     function agree(bytes32 _product) public returns (uint) {
         uint agreementId = managingDirector.originateAgreement(msg.sender, _product);
-        //IBasicToken(basicTokenFactory.contracts("delta")).authorizeOperator(address(this));  //TODO
+        basicTokenFactory.basicTokens(0).authorizeOperator(msg.sender);  //TODO
         emit NewAgreement(msg.sender, agreementId, _product);
         return agreementId;
+    }
+
+    function transferOwnership(uint _agreementId, address _to) {
+        require(msg.sender == agreementOwner(_agreementId), "User does not own agreement");
+        managingDirector.modifyAgreementOwner(_agreementId, _to);
+        emit AgreementTransfer(_agreementId, msg.sender, _to);
     }
 
     function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable {

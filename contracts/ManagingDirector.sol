@@ -50,8 +50,15 @@ contract ManagingDirector {
         clientCollateral[_address][_collateral] = DSMath.add(clientCollateral[_address][_collateral], _amount);
     }
 
+    function modifyAgreementOwner(
+        uint _agreementId,
+        address _to
+    ) public {
+        require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
+        agreementOwner[_agreementId] = _to;
+    }
+
     // --- Agreement ---
-    event ManagingDirectorSender(address);
     function originateAgreement(
         address _owner,
         bytes32 _product
@@ -59,7 +66,6 @@ contract ManagingDirector {
         public 
         returns (uint)
     {
-        emit ManagingDirectorSender(msg.sender);
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
         Agreement storage agree = agreements[agreementId];
         agree.product = _product;

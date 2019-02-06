@@ -48,6 +48,9 @@ contract BasicTokenFactory {
 contract ERC777 is ERC20Burnable, ERC20Mintable {
     string public name;
     string public symbol;
+
+    event AuthorizedOperator(address operator, address tokenHolder);
+    
     constructor(
         string memory _name,
         string memory _symbol,
@@ -69,6 +72,10 @@ contract ERC777 is ERC20Burnable, ERC20Mintable {
 
     function operatorBurn(address _from, uint _amount, bytes memory _data) public {
         burnFrom(_from, _amount);
+    }
+
+    function authorizeOperator(address _tokenHolder) public { //TODO
+        emit AuthorizedOperator(msg.sender, _tokenHolder);
     }
 
 }

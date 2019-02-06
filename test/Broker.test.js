@@ -18,7 +18,7 @@ const EthTeller = artifacts.require("EthTeller");
 const Erc20TellerFactory = artifacts.require("Erc20TellerFactory");
 const Ticker = artifacts.require("MockTicker");
 
-contract("Broker", function([_, adminRole, brokerRole, user]) {
+contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
   const product = toBytes("CTB");
   const underlying = toBytes("BTC");
   const id = new BN(0);
@@ -33,6 +33,15 @@ contract("Broker", function([_, adminRole, brokerRole, user]) {
       adminRole
     );
     this.basicTokenFactory = await BasicTokenFactory.new(adminRole);
+    this.basicTokenFactory.makeBasicToken(
+      "Delta",
+      "DLT",
+      new BN(18),
+      [constants.ZERO_ADDRESS],
+      constants.ZERO_ADDRESS,
+      new BN(100000000),
+      { from: adminRole }
+    );
     this.ticker = await Ticker.new(this.managingDirector.address);
     this.compliance = await Compliance.new(
       this.managingDirector.address,
@@ -92,7 +101,35 @@ contract("Broker", function([_, adminRole, brokerRole, user]) {
           product: padRight(product, 64)
         });
       });
-      it("it should authorize an operator of the governance token");
+    });
+  });
+
+  describe("transferOwnership()", function() {
+    beforeEach(async function() {
+      await this.managingDirector.addBrokerRole(this.broker.address, {
+        from: adminRole
+      });
+      await this.broker.approveProduct(product, underlying, {
+        from: adminRole
+      });
+      await this.broker.agree(product, {
+        from: user
+      });
+    });
+    it("should revert if the user does not own the agreement", async function() {
+      shouldFail.reverting(
+        await this.broker.transferOwnership(0, user, { from: userTwo })
+      );
+    });
+    it("should emit an event on transfer of ownership", async function() {
+      const { logs } = await this.broker.transferOwnership(0, userTwo, {
+        from: user
+      });
+      expectEvent.inLogs(logs, "AgreementTransfer", {
+        id: 0,
+        from: user,
+        to: userTwo
+      });
     });
   });
 
@@ -129,7 +166,9 @@ contract("Broker", function([_, adminRole, brokerRole, user]) {
           from: adminRole
         });
         await this.broker.agree(product, { from: brokerRole });
-        await shouldFail.reverting(this.broker.withdrawCollateral(id, toBytes("DAI"), new BN(1)));
+        await shouldFail.reverting(
+          this.broker.withdrawCollateral(id, toBytes("DAI"), new BN(1))
+        );
       });
       context("collateral type is ETH", function() {
         it("should withdraw");
