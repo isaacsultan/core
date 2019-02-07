@@ -13,7 +13,13 @@ const { wad, ray } = require("./fixedPoint");
 
 const ManagingDirector = artifacts.require("ManagingDirector");
 
-contract("ManagingDirector", function([_, user, brokerRole, adminRole]) {
+contract("ManagingDirector", function([
+  _,
+  user,
+  brokerRole,
+  adminRole,
+  userTwo
+]) {
   beforeEach(async function() {
     this.managingDirector = await ManagingDirector.new(
       toBytes("Inverse"),
@@ -27,7 +33,7 @@ contract("ManagingDirector", function([_, user, brokerRole, adminRole]) {
       );
     });
   });
-  describe("#modifyClientCollateralBalance", function() {
+  describe("#increaseClientCollateralBalance", function() {
     const amountOne = wad(100, 0);
     const amountTwo = wad(10, 1);
     it("should revert if not called by a broker", async function() {
@@ -43,13 +49,13 @@ contract("ManagingDirector", function([_, user, brokerRole, adminRole]) {
       await this.managingDirector.addBrokerRole(brokerRole, {
         from: adminRole
       });
-      await this.managingDirector.modifyClientCollateralBalance(
+      await this.managingDirector.increaseClientCollateralBalance(
         user,
         toBytes("ETH"),
         amountOne,
         { from: brokerRole }
       );
-      await this.managingDirector.modifyClientCollateralBalance(
+      await this.managingDirector.increaseClientCollateralBalance(
         user,
         toBytes("ETH"),
         amountTwo,
@@ -66,13 +72,13 @@ contract("ManagingDirector", function([_, user, brokerRole, adminRole]) {
       await this.managingDirector.addBrokerRole(brokerRole, {
         from: adminRole
       });
-      await this.managingDirector.modifyClientCollateralBalance(
+      await this.managingDirector.increaseClientCollateralBalance(
         user,
         toBytes("ETH"),
         amountOne,
         { from: brokerRole }
       );
-      await this.managingDirector.modifyClientCollateralBalance(
+      await this.managingDirector.increaseClientCollateralBalance(
         user,
         toBytes("DAI"),
         amountTwo,
@@ -121,6 +127,15 @@ contract("ManagingDirector", function([_, user, brokerRole, adminRole]) {
       });
       (await this.managingDirector.agreementId()).should.be.bignumber.equal(
         new BN(2)
+      );
+    });
+  });
+  describe("#modifyAgreementOwner", function() {
+    it("should revert if not called by a broker", async function() {
+      shouldFail.reverting(
+        this.managingDirector.modifyAgreementOwner(userTwo, {
+          from: brokerRole
+        })
       );
     });
   });
@@ -188,53 +203,53 @@ contract("ManagingDirector", function([_, user, brokerRole, adminRole]) {
     it("should calculate the new amount correctly");
     it("should remove the collateral if new amount is zero");
   });
-  describe("#mintAgreementProduct", async function () {
+  describe("#mintAgreementProduct", async function() {
     const id = new BN(0);
     const amount = wad(1, 0);
     const targetPrice = ray(100, 0);
     const underlyingPrice = ray(105, 0);
     beforeEach(async function() {
-        await this.managingDirector.addBrokerRole(brokerRole, {
-            from: adminRole
-          });
-          await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
-            from: brokerRole
-          });
-    }) 
-    it("should revert if not called by a broker", async function() {
-        shouldFail.reverting(
-          this.managingDirector.mintAgreementProduct(
-            id,
-            amount,
-            targetPrice,
-            underlyingPrice
-          )
-        );
+      await this.managingDirector.addBrokerRole(brokerRole, {
+        from: adminRole
       });
+      await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
+        from: brokerRole
+      });
+    });
+    it("should revert if not called by a broker", async function() {
+      shouldFail.reverting(
+        this.managingDirector.mintAgreementProduct(
+          id,
+          amount,
+          targetPrice,
+          underlyingPrice
+        )
+      );
+    });
     it("should store agreement details in agreements", async function() {
-        await this.managingDirector.mintAgreementProduct(
-            id,
-            amount,
-            targetPrice,
-            underlyingPrice,
-            {from: brokerRole}
-          )
-        const testAgreement = await this.managingDirector.agreements(0);
-        testAgreement.targetPrice.should.be.bignumber.equal(targetPrice);
-        testAgreement.underlyingPrice.should.be.bignumber.equal(underlyingPrice);
-        testAgreement.productDebt.should.be.bignumber.equal(amount);
+      await this.managingDirector.mintAgreementProduct(
+        id,
+        amount,
+        targetPrice,
+        underlyingPrice,
+        { from: brokerRole }
+      );
+      const testAgreement = await this.managingDirector.agreements(0);
+      testAgreement.targetPrice.should.be.bignumber.equal(targetPrice);
+      testAgreement.underlyingPrice.should.be.bignumber.equal(underlyingPrice);
+      testAgreement.productDebt.should.be.bignumber.equal(amount);
     });
   });
-  describe("#resetAgreement", function () {
+  describe("#resetAgreement", function() {
     it("should revert if not called by a broker", async function() {
-        shouldFail.reverting(
-          this.managingDirector.mintAgreementProduct(
-            new BN(0),
-            wad(1, 0),
-            ray(100, 0),
-            ray(105, 0)
-          )
-        );
-      });
+      shouldFail.reverting(
+        this.managingDirector.mintAgreementProduct(
+          new BN(0),
+          wad(1, 0),
+          ray(100, 0),
+          ray(105, 0)
+        )
+      );
+    });
   });
 });

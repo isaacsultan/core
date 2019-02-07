@@ -39,15 +39,26 @@ contract ManagingDirector {
         brokerRole.add(_brokerRole);
     }
 
-    function modifyClientCollateralBalance(
+    function increaseClientCollateralBalance(
         address _address, 
         bytes32 _collateral, 
-        int256 _amount
+        uint256 _amount
     ) 
         public 
     {
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
         clientCollateral[_address][_collateral] = DSMath.add(clientCollateral[_address][_collateral], _amount);
+    }
+
+    function decreaseClientCollateralBalance(
+        address _address, 
+        bytes32 _collateral, 
+        uint256 _amount
+    ) 
+        public 
+    {
+        require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
+        clientCollateral[_address][_collateral] = DSMath.sub(clientCollateral[_address][_collateral], _amount);
     }
 
     function modifyAgreementOwner(

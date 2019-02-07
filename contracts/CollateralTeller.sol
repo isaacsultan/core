@@ -11,7 +11,8 @@ contract IErc20 {
 
 
 contract IManagingDirector {
-    function modifyClientCollateralBalance(address, bytes32, int) public;
+    function increaseClientCollateralBalance(address, bytes32, uint) public;
+    function decreaseClientCollateralBalance(address, bytes32, uint) public;
     function clientCollateral(address, bytes32) public view returns (uint);
 }
 
@@ -72,13 +73,13 @@ contract Erc20Teller {
     
     function deposit(uint _amount) public {
         require(collateralToken.transferFrom(msg.sender, address(this), _amount)); //TODO: set a minimum amount
-        managingDirector.modifyClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, int(_amount)));
+        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, _amount));
     }
 
     function withdraw(uint _amount) public {
         require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
         require(collateralToken.transferFrom(address(this), msg.sender, _amount));
-        managingDirector.modifyClientCollateralBalance(msg.sender, collateralType, -DSMath.mul(ONE, int(_amount)));
+        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, _amount));
     }
 }
 
@@ -110,12 +111,12 @@ contract EthTeller {
     }
 
     function deposit() public payable { //TODO: set a minimum amount
-        managingDirector.modifyClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, int(msg.value)));
+        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, msg.value));
     }
 
     function withdraw(uint _amount) public {
         require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
         msg.sender.transfer(_amount);
-        managingDirector.modifyClientCollateralBalance(msg.sender, collateralType, -DSMath.mul(ONE, int(_amount)));
+        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, _amount));
     }
 }
