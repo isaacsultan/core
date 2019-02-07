@@ -5,9 +5,11 @@ import "./Math.sol";
 
 
 contract IManagingDirector {
+
     function collaterals(bytes32) public view returns (uint, uint, uint);
-    function agreements(uint) public view returns (bytes32, bytes32[] memory, uint, uint, uint);
-    function agreementCollateralAmount(uint, bytes32) public view returns (uint);
+    function agreements(uint) public view returns (bytes32, uint, uint, uint);
+    function agreementCollateral(uint, bytes32) public view returns (uint);
+    function collaterals() public view returns (bytes32[] memory, uint[] memory);
 }
 
 
@@ -26,26 +28,22 @@ contract Compliance {
     }
 
     function collateralizationParams(uint _agreementId) public returns (uint, uint) {
-        (, bytes32[] memory cts, , , ) = managingDirector.agreements(_agreementId);
-
+        (bytes32[] memory cltNames, uint[] memory cltRatios) = managingDirector.collaterals();
         uint totalCollateralValue; 
         uint denom;
-        for (uint i = 0; i < cts.length; i++) {
-
-            (, uint ratio, ) = managingDirector.collaterals(cts[i]);
-            (uint price, uint value) = collateralValue(_agreementId, cts[i]);
-
-            denom = DSMath.add(denom, DSMath.rdiv(price, ratio));
-            totalCollateralValue = DSMath.add(totalCollateralValue, value); 
+        for (uint i = 0; i < cltNames.length; i++) {
+            if (managingDirector.agreementCollateral(_agreementId, cltNames[i]) > 0) {
+                (uint price, uint value) = collateralValue(_agreementId, cltNames[i]);
+                denom = DSMath.add(denom, DSMath.rdiv(price, cltRatios[i]));
+                totalCollateralValue = DSMath.add(totalCollateralValue, value); 
+            }
         }
         uint liquidationRatio = DSMath.wdiv(totalCollateralValue, denom);
-        
         return (liquidationRatio, totalCollateralValue);
-
     }
 
     function collateralValue(uint _agreementId, bytes32 _collateral) internal returns (uint, uint) {
-        uint quantity = managingDirector.agreementCollateralAmount(_agreementId, _collateral);
+        uint quantity = managingDirector.agreementCollateral(_agreementId, _collateral);
 
         uint price = ticker.getPrice(_collateral); 
         uint value = DSMath.mul(quantity, price);

@@ -15,7 +15,7 @@ contract IToken {
 
 contract IManagingDirector {
     function resetAgreement(uint, uint, uint, uint) public;
-    function agreements(uint) public view returns (bytes32, bytes32[] memory, uint, uint, uint);
+    function agreements(uint) public view returns (bytes32, uint, uint, uint);
     function liquidateAgreement(uint) public;
     function collaterals(bytes32) public view returns (uint, uint, uint);
     function modifyAgreementProduct(uint, uint256) public;
@@ -138,7 +138,7 @@ contract ProductTeller {
     }
 
     function withdraw(uint256 _agreementId, uint256 amount) public {
-        (, bytes32[] memory cts, uint pd, uint tp,) =
+        (, uint pd, uint tp,) =
             managingDirector.agreements(_agreementId);
 
         require(pd == 0, "Product already minted");
@@ -157,7 +157,7 @@ contract ProductTeller {
 
     function pay(uint256 agreementId, uint256 amount) public {
         
-        (bytes32 pt, bytes32[] memory cts, uint pd, uint tp, uint up) =
+        (bytes32 pt, uint pd, uint tp, uint up) =
             managingDirector.agreements(agreementId);
 
         uint256 newTargetPrice = ticker.getPrice(pt);

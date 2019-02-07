@@ -18,27 +18,39 @@ contract ManagingDirector {
 
     struct Agreement {
         bytes32 product; 
-        bytes32[] collateralTypes;
-        uint256 productDebt;
-        uint256 targetPrice; 
-        uint256 underlyingPrice;
+        uint256 productDebt; // wad
+        uint256 targetPrice; // wad
+        uint256 underlyingPrice; // wad
+    }
+
+    struct Collateral {
+        bytes32 name;
+        uint ratio; // ray
     }
 
     bytes32 public assetClass;
     uint256 public agreementId;
+    Collateral[] public collaterals;
     
     mapping (uint256 => Agreement) public agreements;
     mapping (uint256 => address) public agreementOwner; 
-    mapping (uint256 => mapping(bytes32 => uint256)) public agreementCollateralAmount;
-    mapping (uint256 => mapping(bytes32 => uint256)) public collateralPosition; //TODO: refactor
+    mapping (uint256 => mapping(bytes32 => uint256)) public agreementCollateral; // wad
     mapping (address => mapping(bytes32 => uint256)) public clientCollateral; // wad
-    
+
+
     // --- Administration ---
     function addBrokerRole(address _brokerRole) external {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         brokerRole.add(_brokerRole);
     }
 
+    function addCollateralType(bytes32 _type, uint _ratio) external {
+        require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
+        Collateral memory collateral = Collateral(_type, _ratio);
+        collaterals.push(collateral);
+    }
+
+    // --- Collateral ---
     function increaseClientCollateralBalance(
         address _address, 
         bytes32 _collateral, 
@@ -93,12 +105,9 @@ contract ManagingDirector {
         public 
     {
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
-        Agreement storage agree = agreements[_id];
-        if (agreementCollateralAmount[_id][_collateral] == 0) {
-            addCollateralToAgreement(agree, _id, _collateral);
-        }
-        uint256 newAmount = DSMath.add(agreementCollateralAmount[_id][_collateral], _amount);
-        agreementCollateralAmount[_id][_collateral] = newAmount;
+        
+        uint256 newAmount = DSMath.add(agreementCollateral[_id][_collateral], _amount);
+        agreementCollateral[_id][_collateral] = newAmount;
     }
 
     function decreaseAgreementCollateral(
@@ -109,14 +118,10 @@ contract ManagingDirector {
         public 
     {
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
-        Agreement storage agree = agreements[_id];
 
-        uint256 newAmount = DSMath.sub(agreementCollateralAmount[_id][_collateral], _amount);
-        agreementCollateralAmount[_id][_collateral] = newAmount;
+        uint256 newAmount = DSMath.sub(agreementCollateral[_id][_collateral], _amount);
+        agreementCollateral[_id][_collateral] = newAmount;
 
-        if (newAmount == 0) {
-            deleteCollateralFromAgreement(agree, _id, _collateral);
-        }
     }
 
     function mintAgreementProduct(uint _id, uint _amount, uint _targetPrice, uint _underlyingPrice) public {
@@ -141,9 +146,7 @@ contract ManagingDirector {
         agree.targetPrice = _targetPrice;
         agree.underlyingPrice = _underlyingPrice;
     }
-
-
-
+}
 
     // /// TODO PER LIQUIDATION CONTRACT IMPLEMENTATION
     // function liquidateAgreement(uint _id) public {
@@ -154,30 +157,3 @@ contract ManagingDirector {
     //         agreementCollateralAmount[_id][agree.collateralTypes[i]] = 0;
     //     }
     // }
-
-
-
-    // --- Private Helpers ---
-    // TODO: https://medium.com/@robhitchens/solidity-crud-part-2-ed8d8b4f74ec
-    function deleteCollateralFromAgreement(
-        Agreement storage _agree, 
-        uint _id, 
-        bytes32 _type
-    ) 
-        private 
-    {
-        delete _agree.collateralTypes[collateralPosition[_id][_type]];
-    }
-
-    function addCollateralToAgreement(
-        Agreement storage _agree, 
-        uint _id, 
-        bytes32 _type
-    ) 
-        private 
-    {
-        _agree.collateralTypes.push(_type);
-        collateralPosition[_id][_type] = _agree.collateralTypes.length;
-    }
-
-}

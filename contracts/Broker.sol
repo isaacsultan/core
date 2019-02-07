@@ -11,7 +11,7 @@ contract IManagingDirector {
     function increaseAgreementCollateral(uint256, bytes32, uint) public;
     function collaterals(bytes32) public view returns (uint256, uint256, uint256);
     function productToUnderlying(bytes32) public view returns (bytes32);
-    function agreements(uint256) public view returns (bytes32, bytes32[] memory, uint, uint, uint);
+    function agreements(uint256) public view returns (bytes32, uint, uint, uint);
     function modifyAgreementOwner(uint, address) public;
     function agreementOwner(uint) public view returns (address);
 }
@@ -95,7 +95,7 @@ contract Broker {
     }
 
     function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable {
-        (, , uint productDebt, , ) = managingDirector.agreements(_agreementId);
+        (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
         
         if (Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt)) {
@@ -110,7 +110,7 @@ contract Broker {
     }
 
     function withdrawCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public { //TODO: check collateralisation after change
-        (, , uint productDebt, , ) = managingDirector.agreements(_agreementId);
+        (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
         require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt), "Uncollateralized!");
 
