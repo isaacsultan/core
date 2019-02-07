@@ -8,7 +8,7 @@ import "./Economics.sol";
 
 contract IManagingDirector {
     function originateAgreement(address, bytes32) public returns (uint);
-    function modifyAgreementCollateral(uint256, bytes32, int) public;
+    function increaseAgreementCollateral(uint256, bytes32, uint) public;
     function collaterals(bytes32) public view returns (uint256, uint256, uint256);
     function productToUnderlying(bytes32) public view returns (bytes32);
     function agreements(uint256) public view returns (bytes32, bytes32[] memory, uint, uint, uint);
@@ -88,8 +88,8 @@ contract Broker {
         return agreementId;
     }
 
-    function transferOwnership(uint _agreementId, address _to) {
-        require(msg.sender == agreementOwner(_agreementId), "User does not own agreement");
+    function transferOwnership(uint _agreementId, address _to) public {
+        require(msg.sender == managingDirector.agreementOwner(_agreementId), "User does not own agreement");
         managingDirector.modifyAgreementOwner(_agreementId, _to);
         emit AgreementTransfer(_agreementId, msg.sender, _to);
     }
@@ -105,7 +105,7 @@ contract Broker {
                 IErc20Teller(erc20TellerFactory.contracts(_collateralType)).deposit(_collateralChange);
             }
         } else {
-            managingDirector.modifyAgreementCollateral(_agreementId, _collateralType, int(_collateralChange));
+            managingDirector.increaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);
         }
     }
 

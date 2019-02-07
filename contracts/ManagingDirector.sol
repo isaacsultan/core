@@ -42,7 +42,7 @@ contract ManagingDirector {
     function increaseClientCollateralBalance(
         address _address, 
         bytes32 _collateral, 
-        uint256 _amount
+        uint _amount
     ) 
         public 
     {
@@ -53,7 +53,7 @@ contract ManagingDirector {
     function decreaseClientCollateralBalance(
         address _address, 
         bytes32 _collateral, 
-        uint256 _amount
+        uint _amount
     ) 
         public 
     {
@@ -85,29 +85,41 @@ contract ManagingDirector {
         return agreementId++;
     }
 
-    //TODO: Fix for negative amounts
-    function modifyAgreementCollateral(
+    function increaseAgreementCollateral(
         uint _id, 
         bytes32 _collateral, 
-        int256 _amount
+        uint _amount
     ) 
         public 
     {
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
         Agreement storage agree = agreements[_id];
-        if (_amount > 0 && agreementCollateralAmount[_id][_collateral] == 0) {
+        if (agreementCollateralAmount[_id][_collateral] == 0) {
             addCollateralToAgreement(agree, _id, _collateral);
         }
         uint256 newAmount = DSMath.add(agreementCollateralAmount[_id][_collateral], _amount);
         agreementCollateralAmount[_id][_collateral] = newAmount;
+    }
 
-        assert(newAmount >= 0);
+    function decreaseAgreementCollateral(
+        uint _id, 
+        bytes32 _collateral, 
+        uint _amount
+    ) 
+        public 
+    {
+        require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
+        Agreement storage agree = agreements[_id];
+
+        uint256 newAmount = DSMath.sub(agreementCollateralAmount[_id][_collateral], _amount);
+        agreementCollateralAmount[_id][_collateral] = newAmount;
+
         if (newAmount == 0) {
             deleteCollateralFromAgreement(agree, _id, _collateral);
         }
     }
 
-    function mintAgreementProduct(uint _id, uint256 _amount, uint256 _targetPrice, uint256 _underlyingPrice) public {
+    function mintAgreementProduct(uint _id, uint _amount, uint _targetPrice, uint _underlyingPrice) public {
         require(brokerRole.has(msg.sender), "DOES_NOT_HAVE_BROKER_ROLE");
         Agreement storage agree = agreements[_id];
         agree.targetPrice = _targetPrice; 
