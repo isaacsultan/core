@@ -20,6 +20,10 @@ contract("ManagingDirector", function([
   adminRole,
   userTwo
 ]) {
+  const eth = toBytes("ETH");
+  const ethRatio = ray(15, 1);
+  const dai = toBytes("DAI");
+  const daiRatio = ray(13, 1);
   beforeEach(async function() {
     this.managingDirector = await ManagingDirector.new(
       toBytes("Inverse"),
@@ -33,14 +37,21 @@ contract("ManagingDirector", function([
       );
     });
   });
+  describe("#addCollateralType", function() {
+    it("should revert if not called by an admin", async function() {
+      shouldFail.reverting(
+        this.managingDirector.addCollateralType(eth, ethRatio, { from: user })
+      );
+    });
+  });
   describe("#increaseClientCollateralBalance", function() {
     const amountOne = wad(100, 0);
     const amountTwo = wad(10, 1);
     it("should revert if not called by a broker", async function() {
       shouldFail.reverting(
-        this.managingDirector.modifyClientCollateralBalance(
+        this.managingDirector.increaseClientCollateralBalance(
           constants.ZERO_ADDRESS,
-          toBytes("ETH"),
+          eth,
           amountOne
         )
       );
@@ -51,13 +62,13 @@ contract("ManagingDirector", function([
       });
       await this.managingDirector.increaseClientCollateralBalance(
         user,
-        toBytes("ETH"),
+        eth,
         amountOne,
         { from: brokerRole }
       );
       await this.managingDirector.increaseClientCollateralBalance(
         user,
-        toBytes("ETH"),
+        eth,
         amountTwo,
         { from: brokerRole }
       );
@@ -65,7 +76,7 @@ contract("ManagingDirector", function([
       const expectedAmount = amountOne.add(amountTwo);
       (await this.managingDirector.clientCollateral(
         user,
-        toBytes("ETH")
+        eth
       )).should.be.bignumber.equal(expectedAmount);
     });
     it("should store multiple collateral types in clientCollateral", async function() {
@@ -74,23 +85,23 @@ contract("ManagingDirector", function([
       });
       await this.managingDirector.increaseClientCollateralBalance(
         user,
-        toBytes("ETH"),
+        eth,
         amountOne,
         { from: brokerRole }
       );
       await this.managingDirector.increaseClientCollateralBalance(
         user,
-        toBytes("DAI"),
+        dai,
         amountTwo,
         { from: brokerRole }
       );
       (await this.managingDirector.clientCollateral(
         user,
-        toBytes("ETH")
+        eth
       )).should.be.bignumber.equal(amountOne);
       (await this.managingDirector.clientCollateral(
         user,
-        toBytes("DAI")
+        dai
       )).should.be.bignumber.equal(amountTwo);
     });
   });
@@ -132,18 +143,23 @@ contract("ManagingDirector", function([
   });
   describe("#modifyAgreementOwner", function() {
     it("should revert if not called by a broker", async function() {
+      await this.managingDirector.addBrokerRole(brokerRole, {
+        from: adminRole
+      });
+      await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
+        from: brokerRole
+      });
       shouldFail.reverting(
-        this.managingDirector.modifyAgreementOwner(userTwo, {
-          from: brokerRole
-        })
+        this.managingDirector.modifyAgreementOwner(0, userTwo)
       );
     });
   });
-  describe("#modifyAgreementCollateral", function() {
+
+  describe("#increaseAgreementCollateral", function() {
     const product = toBytes("CTB");
     const id = new BN(0);
-    const collateral = toBytes("ETH");
-    const positiveAmount = wad(100, 0);
+    const collateral = eth;
+    const amount = wad(100, 0);
     beforeEach(async function() {
       await this.managingDirector.addBrokerRole(brokerRole, {
         from: adminRole
@@ -154,55 +170,88 @@ contract("ManagingDirector", function([
     });
     it("should revert if not called by a broker", async function() {
       shouldFail.reverting(
-        this.managingDirector.modifyAgreementCollateral(
+        this.managingDirector.increaseAgreementCollateral(
           id,
           collateral,
-          positiveAmount
+          amount
         )
       );
     });
-    it("should add a new collateral if that collateral does not already exist", async function() {
-      await this.managingDirector.modifyAgreementCollateral(
+    it("should increase the collateral amount", async function() {
+      await this.managingDirector.increaseAgreementCollateral(
         id,
         collateral,
-        positiveAmount,
+        amount,
         { from: brokerRole }
       );
-      (await this.managingDirector.collateralPosition(
+      (await this.managingDirector.agreementCollateral(
         0,
         collateral
-      )).should.be.bignumber.equal("1");
-      //TODO: Access Collateral Array
-      //(await this.managingDirector.agreements(0)).collateralTypes.should.equal(["ETH"])
-      const collateralTwo = toBytes("DAI");
-      await this.managingDirector.modifyAgreementCollateral(
-        id,
-        collateralTwo,
-        positiveAmount,
-        { from: brokerRole }
-      );
-      (await this.managingDirector.collateralPosition(
-        0,
-        collateralTwo
-      )).should.be.bignumber.equal("2");
+      )).should.be.bignumber.equal(amount);
     });
-    it("should not add a new collateral if one of same type already exists"); //TODO: after fixes
-    it("should not add new collateral if the amount is zero or negative", async function() {
-      //TODO: Fix modify agreement collateral
-      await this.managingDirector.modifyAgreementCollateral(
-        id,
-        collateral,
-        wad(0, 0),
-        { from: brokerRole }
-      );
-      (await this.managingDirector.collateralPosition(
-        0,
-        collateral
-      )).should.be.bignumber.equal("0");
-    });
-    it("should calculate the new amount correctly");
-    it("should remove the collateral if new amount is zero");
   });
+
+  describe("#decreaseAgreementCollateral", function() {
+    const product = toBytes("CTB");
+    const id = new BN(0);
+    const collateral = eth;
+    const amount = wad(100, 0);
+    beforeEach(async function() {
+      await this.managingDirector.addBrokerRole(brokerRole, {
+        from: adminRole
+      });
+      await this.managingDirector.originateAgreement(user, product, {
+        from: brokerRole
+      });
+    });
+    it("should revert if not called by a broker", async function() {
+      shouldFail.reverting(
+        this.managingDirector.decreaseAgreementCollateral(
+          id,
+          collateral,
+          amount
+        )
+      );
+    });
+    it("should revert if collateral is decreased below zero", async function() {
+      const smallAmount = wad(10, 0);
+      await this.managingDirector.increaseAgreementCollateral(
+        id,
+        collateral,
+        smallAmount,
+        { from: brokerRole }
+      );
+      shouldFail.reverting(
+        this.managingDirector.decreaseAgreementCollateral(
+          id,
+          collateral,
+          amount,
+          { from: brokerRole }
+        )
+      );
+    });
+    it("should reduce the collateral amount", async function() {
+      const largeAmount = wad(150, 0);
+      await this.managingDirector.increaseAgreementCollateral(
+        id,
+        collateral,
+        largeAmount,
+        { from: brokerRole }
+      );
+      await this.managingDirector.decreaseAgreementCollateral(
+        id,
+        collateral,
+        amount,
+        { from: brokerRole }
+      );
+      const expectedAmount = largeAmount.sub(amount);
+      (await this.managingDirector.agreementCollateral(
+        0,
+        collateral
+      )).should.be.bignumber.equal(expectedAmount);
+    });
+  });
+
   describe("#mintAgreementProduct", async function() {
     const id = new BN(0);
     const amount = wad(1, 0);
