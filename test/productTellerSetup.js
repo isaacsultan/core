@@ -22,14 +22,14 @@ async function setup(adminRole, brokerRole) {
 
   const managingDirector = await ManagingDirector.new(
     toBytes("inverse"),
-    adminRole,
-    brokerRole
+    adminRole
   );
   const liquidator = await Liquidator.new(managingDirector.address);
   const ticker = await Ticker.new(managingDirector.address);
   const compliance = await Compliance.new(
     managingDirector.address,
-    ticker.address
+    ticker.address,
+    adminRole
   );
   const erc20TellerFactory = await Erc20TellerFactory.new(adminRole);
   const ethTeller = await EthTeller.new(managingDirector.address, adminRole);
