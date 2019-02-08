@@ -23,14 +23,8 @@ contract ManagingDirector {
         uint256 underlyingPrice; // wad
     }
 
-    struct Collateral {
-        bytes32 name;
-        uint ratio; // ray
-    }
-
     bytes32 public assetClass;
     uint256 public agreementId;
-    Collateral[] public collaterals;
     
     mapping (uint256 => Agreement) public agreements;
     mapping (uint256 => address) public agreementOwner; 
@@ -42,12 +36,6 @@ contract ManagingDirector {
     function addBrokerRole(address _brokerRole) external {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         brokerRole.add(_brokerRole);
-    }
-
-    function addCollateralType(bytes32 _type, uint _ratio) external {
-        require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
-        Collateral memory collateral = Collateral(_type, _ratio);
-        collaterals.push(collateral);
     }
 
     // --- Collateral ---
