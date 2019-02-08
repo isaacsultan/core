@@ -53,10 +53,10 @@ contract Erc20Teller {
     IErc20 public collateralToken;
 
     uint public liquidityRatio; //ray
-    uint public liquidityFee; //wad
+    uint public liquidationFee; //wad
     uint public constant ONE = 10**27;
 
-    event NewErc20TellerParams(bytes32 tellerType, uint liquidityRatio, uint liquidityFee);
+    event Erc20TellerParams(bytes32 tellerType, address tokenAddress, uint liquidityRatio, uint liquidationFee);
     
     constructor(address _managingDirector, bytes32 _collateralType, address _collateralToken, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -68,18 +68,19 @@ contract Erc20Teller {
     function setParameters(uint _liquidityRatio, uint _liquidationFee) public {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         liquidityRatio = _liquidityRatio;
-        liquidityFee = _liquidationFee;
+        liquidationFee = _liquidationFee;
+        emit Erc20TellerParams(collateralType, address(collateralToken), liquidityRatio, liquidationFee);
     }
     
     function deposit(uint _amount) public {
         require(collateralToken.transferFrom(msg.sender, address(this), _amount)); //TODO: set a minimum amount
-        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, _amount));
+        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, _amount);
     }
 
     function withdraw(uint _amount) public {
         require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
         require(collateralToken.transferFrom(address(this), msg.sender, _amount));
-        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, _amount));
+        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
     }
 }
 
@@ -93,10 +94,10 @@ contract EthTeller {
     bytes32 public collateralType = "ETH";
 
     uint public liquidityRatio; //ray
-    uint public liquidityFee; //wad
+    uint public liquidationFee; //wad
     uint public constant ONE = 10**27;
 
-    event CollateralParameters(bytes32 collateralType, uint liquidityRatio, uint liquidityFee);
+    event EthTellerParams(bytes32 tellerType, uint liquidityRatio, uint liquidationFee);
 
     constructor(address _managingDirector, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -106,17 +107,17 @@ contract EthTeller {
     function setParameters(uint _liquidityRatio, uint _liquidationFee) public {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         liquidityRatio = _liquidityRatio;
-        liquidityFee = _liquidationFee;
-        emit CollateralParameters(collateralType, _liquidityRatio, _liquidationFee);
+        liquidationFee = _liquidationFee;
+        emit EthTellerParams(collateralType, liquidityRatio, liquidationFee);
     }
 
     function deposit() public payable { //TODO: set a minimum amount
-        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, msg.value));
+        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, msg.value);
     }
 
     function withdraw(uint _amount) public {
         require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
         msg.sender.transfer(_amount);
-        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, DSMath.mul(ONE, _amount));
+        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
     }
 }
