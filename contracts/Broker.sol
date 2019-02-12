@@ -65,6 +65,8 @@ contract Broker {
     event NewProductType(bytes32 productType, bytes32 underlyingType);
     event NewAgreement(address client, uint id, bytes32 product);
     event AgreementTransfer(uint id, address from, address to);
+    event CollateralOffer(address client, uint id, bytes32 collateral, uint amount);
+    event CollateralWithdraw(address client, uint id, bytes32 collateral, uint amount);
 
     constructor(address _managingDirector, address _btFactory, address _compliance, address _ethTeller, address _erc20TellerFactory, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -94,7 +96,7 @@ contract Broker {
         emit AgreementTransfer(_agreementId, msg.sender, _to);
     }
 
-    function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable {
+    function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable { //check logic
         (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
         
@@ -107,6 +109,7 @@ contract Broker {
         } else {
             managingDirector.increaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);
         }
+        emit CollateralOffer(msg.sender, _agreementId, _collateralType, _collateralChange);
     }
 
     function withdrawCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public { //TODO: check collateralisation after change
@@ -119,5 +122,6 @@ contract Broker {
         } else {
             IErc20Teller(erc20TellerFactory.contracts(_collateralType)).withdraw(_collateralChange);
         }
+        emit CollateralWithdraw(msg.sender, _agreementId, _collateralType, _collateralChange);
     }
 }
