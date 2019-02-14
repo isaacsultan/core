@@ -116,18 +116,19 @@ contract Broker {
         emit CollateralOffer(msg.sender, _agreementId, _collateralType, _collateralChange);
     }
 
-    function withdrawCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public { //TODO: check collateralisation after change
+    function withdrawCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public { 
+        require(msg.sender == managingDirector.agreementOwner(_agreementId), "Agreement not owned by client");
+
         (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParamsAfterChange(_agreementId, _collateralType, _collateralChange);
-        
         require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt), "Withdrawal does not maintain agreement collateralization");
-
+//
         if (_collateralType == "ETH") {
             ethTeller.withdraw(_collateralChange);
         } else {
             IErc20Teller(erc20TellerFactory.contracts(_collateralType)).withdraw(_collateralChange);
         }
-
+//
         managingDirector.decreaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);
         emit CollateralWithdraw(msg.sender, _agreementId, _collateralType, _collateralChange);
     }

@@ -23,6 +23,8 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
   const product = toBytes("CTB");
   const underlying = toBytes("BTC");
   const id = new BN(0);
+  const eth = toBytes("ETH");
+  const dai = toBytes("DAI");
   beforeEach(async function() {
     this.managingDirector = await ManagingDirector.new(
       toBytes("inverse"),
@@ -76,13 +78,10 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
 
   describe("agree()", function() {
     it("should revert if an invalid product type is unapproved", async function() {
-      shouldFail.reverting(this.broker.agree(toBytes("DENT"), {from: user}));
+      shouldFail.reverting(this.broker.agree(toBytes("DENT"), { from: user }));
     });
     context("a valid product type is approved", function() {
       beforeEach(async function() {
-        //await this.managingDirector.addBrokerRole(this.broker.address, {
-        //  from: adminRole
-        //});
         await this.broker.approveProduct(product, underlying, {
           from: adminRole
         });
@@ -111,9 +110,6 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
 
   describe("transferOwnership()", function() {
     beforeEach(async function() {
-      //await this.managingDirector.addBrokerRole(this.broker.address, {
-      //  from: adminRole
-      //});
       await this.broker.approveProduct(product, underlying, {
         from: adminRole
       });
@@ -138,102 +134,111 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
     });
   });
 
-  describe("offerCollateral()", function() {
-    const amount = new wad(1, 0);
-    const eth = toBytes("ETH");
-    const dai = toBytes("DAI");
-    beforeEach(async function() {
-      //await this.managingDirector.addBrokerRole(brokerRole, {
-      //  from: adminRole
-      //});
-      await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
-       from: this.broker.address
-      });
-    });
-    it("should pass", async function() {
-      const one = 1
-      one.should.equal(1);
-    });
-    it("should require a valid collateral type", async function() {
-      await shouldFail.reverting(
-        this.broker.offerCollateral(id, toBytes("DENT"), amount, {from: user})
-      );
-    });
-    it("should require a valid agreementID", async function() {
-      await shouldFail.reverting(this.broker.offerCollateral(0, eth, amount, {from: user}));
-    });
-    it("should revert if agreement already fully collateralized", async function() {
-      await this.managingDirector.increaseAgreementCollateral(
-        0,
-        dai,
-        wad(10000, 0),
-        { from: this.broker.address }
-      );
-      shouldFail.reverting(this.broker.offerCollateral(0, dai, wad(1, 0)), {
-        from: user
-      });
-    });
-    context("ETH tokens are offered as collateral", function() {
-      it("should deposit tokens in EthTeller", async function() {
-        await balance
-          .difference(this.ethTeller.address, async () => {
-            await this.broker.offerCollateral(0, eth, amount, {
-              from: user
-            });
-          })
-          .should.be.bignumber.equal(amount);
-      });
-      it("should emit an event", async function() {
-        const { logs } = await this.broker.offerCollateral(0, eth, amount, {
-          from: user
-        });
-        expectEvent.inLogs(logs, "CollateralOffer", {
-          client: user,
-          id: 0,
-          collateral: eth,
-          amount: amount
-        });
-      });
-    });
-    context("ERC20 tokens are offered as collateral", function() {
-      it("should deposit tokens", async function() {
-        await this.broker.offerCollateral(0, dai, amount, {
-          from: user
-        });
-      });
-      //  it("should emit an event", async function() {
-      //    const { logs } = await this.broker.offerCollateral(
-      //      0,
-      //      dai,
-      //      amount,
-      //      { from: user }
-      //    );
-      //    expectEvent.inLogs(logs, "CollateralOffer", {
-      //      client: user,
-      //      id: 0,
-      //      collateral: dai,
-      //      amount: amount
-      //    });
-      //  });
-      //});
-    });
+  //describe("offerCollateral()", function() {
+  //  const amount = wad(1, 0);
+  //  beforeEach(async function() {
+  //    //await this.managingDirector.addBrokerRole(brokerRole, {
+  //    //  from: adminRole
+  //    //});
+  //    await this.broker.approveProduct(product, toBytes("BTC"), {from: adminRole});
+  //    await this.broker.agree(product, {from:user});
+  //  });
+  //  it("should pass", async function() {
+  //    const one = 1
+  //    one.should.equal(1);
+  //  });
+  //  it("should require a valid collateral type", async function() {
+  //    await shouldFail.reverting(
+  //      this.broker.offerCollateral(id, toBytes("DENT"), amount, {from: user})
+  //    );
+  //  });
+  //  it("should require a valid agreementID", async function() {
+  //    await shouldFail.reverting(this.broker.offerCollateral(0, eth, amount, {from: user}));
+  //  });
+  //  it("should revert if agreement already fully collateralized", async function() {
+  //    await this.managingDirector.increaseAgreementCollateral(
+  //      0,
+  //      dai,
+  //      wad(10000, 0),
+  //      { from: this.broker.address }
+  //    );
+  //    shouldFail.reverting(this.broker.offerCollateral(0, dai, wad(1, 0)), {
+  //      from: user
+  //    });
+  //  });
+  //  context("ETH tokens are offered as collateral", function() {
+  //    it("should deposit tokens in EthTeller", async function() {
+  //      await balance
+  //        .difference(this.ethTeller.address, async () => {
+  //          await this.broker.offerCollateral(0, eth, amount, {
+  //            from: user
+  //          });
+  //        })
+  //        .should.be.bignumber.equal(amount);
+  //    });
+  //    it("should emit an event", async function() {
+  //      const { logs } = await this.broker.offerCollateral(0, eth, amount, {
+  //        from: user
+  //      });
+  //      expectEvent.inLogs(logs, "CollateralOffer", {
+  //        client: user,
+  //        id: 0,
+  //        collateral: eth,
+  //        amount: amount
+  //      });
+  //    });
+  //  });
+  //  context("ERC20 tokens are offered as collateral", function() {
+  //    it("should deposit tokens", async function() {
+  //      await this.broker.offerCollateral(0, dai, amount, {
+  //        from: user
+  //      });
+  //    });
+  //    //  it("should emit an event", async function() {
+  //    //    const { logs } = await this.broker.offerCollateral(
+  //    //      0,
+  //    //      dai,
+  //    //      amount,
+  //    //      { from: user }
+  //    //    );
+  //    //    expectEvent.inLogs(logs, "CollateralOffer", {
+  //    //      client: user,
+  //    //      id: 0,
+  //    //      collateral: dai,
+  //    //      amount: amount
+  //    //    });
+  //    //  });
+  //    //});
+  //  });
 
-    //describe("withdrawCollateral()", function() {
-    //  it("should revert if uncollateralised", async function() {
-    //    await this.broker.approveProduct(product, underlying, {
-    //      from: adminRole
-    //    });
-    //    await this.broker.agree(product, { from: brokerRole });
-    //    await shouldFail.reverting(
-    //      this.broker.withdrawCollateral(id, dai, new BN(1))
-    //    );
-    //  });
-    //  context("collateral type is ETH", function() {
-    //    it("should withdraw");
-    //  });
-    //  context("collateral type is ERC20", function() {
-    //    it("should withdraw");
-    //  });
+  describe("withdrawCollateral()", function() {
+    const dai = toBytes("dai");
+    beforeEach(async function() {
+      await this.broker.approveProduct(product, underlying, {
+        from: adminRole
+      });
+      await this.broker.agree(product, { from: user });
+    });
+    it("should revert if uncollateralised", async function() {
+      await shouldFail.reverting(
+        this.broker.withdrawCollateral(id, dai, new BN(1))
+      );
+    });
+    it("should revert if withdrawing from agreement not owned by the user", async function() {
+      await this.broker.offerCollateral(id, eth, wad(100, 0));
+      await shouldFail.reverting(
+        this.broker.withdrawCollateral(id, eth, wad(99, 0)),
+        { from: userTwo }
+      );
+    });
+    context("collateral type is ETH", function() {
+      //TODO
+      it("should withdraw", async function() {
+        await this.broker.offerCollateral(id, eth, wad(100, 0));
+      });
+    });
+    context("collateral type is ERC20", function() {
+      it("should withdraw");
+    });
   });
 });
-//;
