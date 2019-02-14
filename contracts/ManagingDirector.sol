@@ -31,7 +31,6 @@ contract ManagingDirector {
     mapping (uint256 => mapping(bytes32 => uint256)) public agreementCollateral; // wad
     mapping (address => mapping(bytes32 => uint256)) public clientCollateral; // wad
 
-
     // --- Administration ---
     function addBrokerRole(address _brokerRole) external {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");

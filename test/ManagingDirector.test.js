@@ -37,13 +37,6 @@ contract("ManagingDirector", function([
       );
     });
   });
-  describe("#addCollateralType", function() {
-    it("should revert if not called by an admin", async function() {
-      shouldFail.reverting(
-        this.managingDirector.addCollateralType(eth, ethRatio, { from: user })
-      );
-    });
-  });
   describe("#increaseClientCollateralBalance", function() {
     const amountOne = wad(100, 0);
     const amountTwo = wad(10, 1);
@@ -252,7 +245,7 @@ contract("ManagingDirector", function([
     });
   });
 
-  describe("#mintAgreementProduct", async function() {
+  describe("#mintAgreementProduct", function() {
     const id = new BN(0);
     const amount = wad(1, 0);
     const targetPrice = ray(100, 0);
