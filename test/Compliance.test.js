@@ -37,95 +37,120 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
       this.ticker.address,
       adminRole
     );
-    this.compliance.addCollateralType(eth, ethRatio, { from: adminRole });
-    this.compliance.addCollateralType(dai, daiRatio, { from: adminRole });
-    this.compliance.addCollateralType(wbtc, wbtcRatio, { from: adminRole });
-    await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
-      from: brokerRole
-    });
-    const ethAmount = wad(123, 1);
-    const wbtcAmount = wad(317, 2);
-    await this.managingDirector.increaseAgreementCollateral(0, eth, ethAmount, {
-      from: brokerRole
-    });
-    await this.managingDirector.increaseAgreementCollateral(0, dai, daiAmount, {
-      from: brokerRole
-    });
-    await this.managingDirector.increaseAgreementCollateral(
-      0,
-      wbtc,
-      wbtcAmount,
-      { from: brokerRole }
-    );
   });
-  describe("#collateralizationParams", function() {
-    it("should emit an event with the correct total collateral value", async function() {
-      const { logs } = await this.compliance.collateralizationParams(0);
-      const expectedTCV = new wad(17559, 0); // 17559
-
-      expectEvent.inLogs(logs, "CollateralizationParameters", {
-        id: new BN(0),
-        totalCollateralValue: expectedTCV
-      });
-    });
-    it("should emit an event with the correct liquidation ratio", async function() {
-      const { logs } = await this.compliance.collateralizationParams(0);
-      const expectedLR = "401604238211331150073951840663855423727"; // TODO: 4.016042382113311500739518406638554237279521015706930464939...
-
-      expectEvent.inLogs(
-        logs,
-        "CollateralizationParameters",
-        {
-          id: "0",
-          liquidationRatio: expectedLR
-        },
-        true
+  describe("#addCollateralType", function() {
+    it("should revert if not called by an admin", async function() {
+      shouldFail.reverting(
+        this.compliance.addCollateralType(eth, ethRatio, { from: user })
       );
     });
   });
-  describe("#collateralizationParamsAfterChange", function() {
-    const collateral = toBytes("DAI");
-    const amount = daiAmount.sub(wad(10, 0));
-    it("should revert if new collateral quantity is less than zero", async function() {
-      const largeAmount = daiAmount.add(wad(10, 0));
-      shouldFail.reverting(
-        this.compliance.collateralizationParamsAfterChange(
+  context("collaterals ETH, DAI & WBTC have been approved", function() {
+    beforeEach(async function() {
+      this.compliance.addCollateralType(eth, ethRatio, { from: adminRole });
+      this.compliance.addCollateralType(dai, daiRatio, { from: adminRole });
+      this.compliance.addCollateralType(wbtc, wbtcRatio, { from: adminRole });
+      await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
+        from: brokerRole
+      });
+      const ethAmount = wad(123, 1);
+      const wbtcAmount = wad(317, 2);
+      await this.managingDirector.increaseAgreementCollateral(
+        0,
+        eth,
+        ethAmount,
+        {
+          from: brokerRole
+        }
+      );
+      await this.managingDirector.increaseAgreementCollateral(
+        0,
+        dai,
+        daiAmount,
+        {
+          from: brokerRole
+        }
+      );
+      await this.managingDirector.increaseAgreementCollateral(
+        0,
+        wbtc,
+        wbtcAmount,
+        { from: brokerRole }
+      );
+    });
+    describe("#collateralizationParams", function() {
+      it("should emit an event with the correct total collateral value", async function() {
+        const { logs } = await this.compliance.collateralizationParams(0);
+        const expectedTCV = new wad(17559, 0); // 17559
+
+        expectEvent.inLogs(logs, "CollateralizationParameters", {
+          id: new BN(0),
+          totalCollateralValue: expectedTCV
+        });
+      });
+      it("should emit an event with the correct liquidation ratio", async function() {
+        const { logs } = await this.compliance.collateralizationParams(0);
+        const expectedLR = "401604238211331150073951840663855423727"; // TODO: 4.016042382113311500739518406638554237279521015706930464939...
+
+        expectEvent.inLogs(
+          logs,
+          "CollateralizationParameters",
+          {
+            id: "0",
+            liquidationRatio: expectedLR
+          },
+          true
+        );
+      });
+    });
+    describe("#collateralizationParamsAfterChange", function() {
+      const collateral = toBytes("DAI");
+      const amount = daiAmount.sub(wad(10, 0));
+      it("should revert if new collateral quantity is less than zero", async function() {
+        const largeAmount = daiAmount.add(wad(10, 0));
+        shouldFail.reverting(
+          this.compliance.collateralizationParamsAfterChange(
+            0,
+            collateral,
+            largeAmount
+          )
+        );
+      });
+      it("should emit an event with the correct total collateral value", async function() {
+        const {
+          logs
+        } = await this.compliance.collateralizationParamsAfterChange(
           0,
           collateral,
-          largeAmount
-        )
-      );
-    });
-    it("should emit an event with the correct total collateral value", async function() {
-      const { logs } = await this.compliance.collateralizationParamsAfterChange(
-        0,
-        collateral,
-        amount
-      );
-      const expectedTCV = new wad(17558, 0); // TODO: FIX!
+          amount
+        );
+        const expectedTCV = new wad(17558, 0); // TODO: FIX!
 
-      expectEvent.inLogs(logs, "CollateralizationParameters", {
-        id: new BN(0),
-        totalCollateralValue: expectedTCV
+        expectEvent.inLogs(logs, "CollateralizationParameters", {
+          id: new BN(0),
+          totalCollateralValue: expectedTCV
+        });
       });
-    });
-    it("should emit an event with the correct liquidation ratio", async function() {
-      const { logs } = await this.compliance.collateralizationParamsAfterChange(
-        0,
-        collateral,
-        amount
-      );
-      const expectedLR = "6598647125140924464487034949267192785"; // // TODO: FIX!
+      it("should emit an event with the correct liquidation ratio", async function() {
+        const {
+          logs
+        } = await this.compliance.collateralizationParamsAfterChange(
+          0,
+          collateral,
+          amount
+        );
+        const expectedLR = "6598647125140924464487034949267192785"; // // TODO: FIX!
 
-      expectEvent.inLogs(
-        logs,
-        "CollateralizationParameters",
-        {
-          id: "0",
-          liquidationRatio: expectedLR
-        },
-        true
-      );
+        expectEvent.inLogs(
+          logs,
+          "CollateralizationParameters",
+          {
+            id: "0",
+            liquidationRatio: expectedLR
+          },
+          true
+        );
+      });
     });
   });
 });
