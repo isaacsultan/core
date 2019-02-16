@@ -1,5 +1,7 @@
 # core
 
+[![CircleCI](https://circleci.com/gh/partial-f/core.svg?style=svg)](https://circleci.com/gh/partial-f/core)
+
 Smart contracts for [Partial f](https://partialf.com/), a decentralized protocol that allows the printing of synthetic derivative tokens.
 
 ## Development
