@@ -11,7 +11,7 @@ const toBytes = web3.utils.utf8ToHex;
 
 const BasicTokenFactory = artifacts.require("BasicTokenFactory");
 
-contract("BasicToken", function([_, adminRole]) {
+contract("BasicTokenFactory", function([_, adminRole]) {
   const name = "ConverseTrackingBitcoin";
   const symbol = "CTB";
   const granularity = new BN(18);

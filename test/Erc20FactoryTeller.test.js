@@ -22,8 +22,7 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole]) {
   beforeEach(async function() {
     this.managingDirector = await ManagingDirector.new(
       toBytes("inverse"),
-      adminRole,
-      brokerRole
+      adminRole
     );
     this.erc20TellerFactory = await Erc20TellerFactory.new(adminRole);
   });

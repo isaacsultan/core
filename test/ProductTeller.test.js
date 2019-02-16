@@ -109,11 +109,6 @@ contract("ProductTeller", function([_, adminRole, brokerRole]) {
       compliance
     ] = await setup(adminRole, brokerRole);
 
-    const granularity = new BN(18);
-    const burnOperator = adminRole;
-    const approvedOperators = [adminRole];
-    const initialSupply = new BN(100000000);
-
     await productTellerFactory.makeProductTeller(
       productType,
       managingDirector.address,
@@ -127,6 +122,7 @@ contract("ProductTeller", function([_, adminRole, brokerRole]) {
       { from: adminRole }
     );
     this.productTeller = await productTellerFactory.productTellers(0);
+    console.log(this.productTeller.address);
   });
   describe("setProductFee", function() {
     it("should allow an admin to set a product fee", async function() {

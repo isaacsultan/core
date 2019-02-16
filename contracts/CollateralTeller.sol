@@ -9,7 +9,6 @@ contract IErc20 {
 }
 
 
-
 contract IManagingDirector {
     function increaseClientCollateralBalance(address, bytes32, uint) public;
     function decreaseClientCollateralBalance(address, bytes32, uint) public;
@@ -58,7 +57,7 @@ contract Erc20Teller {
 
     event Erc20TellerParams(bytes32 tellerType, address tokenAddress, uint liquidityRatio, uint liquidationFee);
     
-    constructor(address _managingDirector, bytes32 _collateralType, address _collateralToken, address _adminRole) public {
+    constructor(address _managingDirector, bytes32 _collateralType, address _collateralToken, address _adminRole) public { //TODO: Restrict permision to factory
         managingDirector = IManagingDirector(_managingDirector);
         collateralType = _collateralType;
         collateralToken = IErc20(_collateralToken);
@@ -73,7 +72,7 @@ contract Erc20Teller {
     }
     
     function deposit(uint _amount) public {
-        require(collateralToken.transferFrom(msg.sender, address(this), _amount)); //TODO: set a minimum amount
+        require(collateralToken.transferFrom(msg.sender, address(this), _amount));
         managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, _amount);
     }
 
@@ -111,7 +110,7 @@ contract EthTeller {
         emit EthTellerParams(collateralType, liquidityRatio, liquidationFee);
     }
 
-    function deposit() public payable { //TODO: set a minimum amount
+    function deposit() public payable {
         managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, msg.value);
     }
 

@@ -122,13 +122,13 @@ contract Broker {
         (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParamsAfterChange(_agreementId, _collateralType, _collateralChange);
         require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt), "Withdrawal does not maintain agreement collateralization");
-//
+
         if (_collateralType == "ETH") {
             ethTeller.withdraw(_collateralChange);
         } else {
             IErc20Teller(erc20TellerFactory.contracts(_collateralType)).withdraw(_collateralChange);
         }
-//
+
         managingDirector.decreaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);
         emit CollateralWithdraw(msg.sender, _agreementId, _collateralType, _collateralChange);
     }
