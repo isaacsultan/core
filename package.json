@@ -1,19 +1,23 @@
 {
-  "name": "migrate",
-  "version": "1.0.0",
-  "description": "",
+  "name": "partial-f-core",
+  "version": "0.0.1",
+  "description": "Smart contracts for [Partial f](https://partialf.com/), a decentralized protocol that allows the printing of synthetic derivative tokens.",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "truffle test",
+    "compile": "truffle compile"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Isaac Sultan",
+  "license": "Apache License, Version 2.0",
   "dependencies": {
-    "ganache-cli": "^6.3.0",
     "openzeppelin-solidity": "^2.1.2",
     "openzeppelin-test-helpers": "^0.1.2"
+  },
+  "devDependencies": {
+    "truffle": "^5.0.4",
+    "ganache-cli": "^6.3.0"
   }
 }
