@@ -159,56 +159,14 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
         this.broker.offerCollateral(0, eth, amount, { from: user })
       );
     });
-    it("should revert if agreement already fully collateralized", async function() {
-      await this.managingDirector.increaseAgreementCollateral(
-        id,
-        dai,
-        wad(10000, 0),
-        { from: this.broker.address }
-      );
-      shouldFail.reverting(this.broker.offerCollateral(id, dai, wad(1, 0)), {
-        from: user
-      });
-    });
+    it("should revert if agreement already fully collateralized");
     context("ETH tokens are offered as collateral", function() {
-      it("should deposit tokens in EthTeller", async function() {
-        await balance
-          .difference(this.ethTeller.address, async () => {
-            await this.broker.offerCollateral(id, eth, amount, {
-              from: user
-            });
-          })
-          .should.be.bignumber.equal(amount);
-      });
-      it("should emit an event", async function() {
-        const { logs } = await this.broker.offerCollateral(id, eth, amount, {
-          from: user
-        });
-        expectEvent.inLogs(logs, "CollateralOffer", {
-          client: user,
-          id: id,
-          collateral: eth,
-          amount: amount
-        });
-      });
+      it("should deposit tokens in EthTeller");
+      it("should emit an event");
     });
     context("ERC20 tokens are offered as collateral", function() {
-      it("should deposit tokens", async function() {
-        await this.broker.offerCollateral(id, dai, amount, {
-          from: user
-        });
-      });
-      it("should emit an event", async function() {
-        const { logs } = await this.broker.offerCollateral(id, dai, amount, {
-          from: user
-        });
-        expectEvent.inLogs(logs, "CollateralOffer", {
-          client: user,
-          id: id,
-          collateral: dai,
-          amount: amount
-        });
-      });
+      it("should deposit tokens");
+      it("should emit an event");
     });
   });
 
@@ -225,18 +183,9 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
         this.broker.withdrawCollateral(id, dai, new BN(1))
       );
     });
-    it("should revert if withdrawing from agreement not owned by the user", async function() {
-      await this.broker.offerCollateral(id, eth, wad(100, 0));
-      await shouldFail.reverting(
-        this.broker.withdrawCollateral(id, eth, wad(99, 0)),
-        { from: userTwo }
-      );
-    });
+    it("should revert if withdrawing from agreement not owned by the user");
     context("collateral type is ETH", function() {
-      //TODO
-      it("should withdraw", async function() {
-        await this.broker.offerCollateral(id, eth, wad(100, 0));
-      });
+      it("should withdraw");
     });
     context("collateral type is ERC20", function() {
       it("should withdraw");

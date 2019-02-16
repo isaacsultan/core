@@ -85,17 +85,15 @@ contract("Erc20Teller", function([_, adminRole, user]) {
       beforeEach(async function() {
         await this.daiToken.approve(this.erc20Teller.address, amount, { from: user });
       });
-      it("should transfer the collateral token to CollateralTeller", async function() {
-        await this.erc20Teller.deposit(amount, { from: user });
-      });
-      it("should increase the users collateral balance", async function() {});
+      it("should transfer the collateral token to CollateralTeller");
+      it("should increase the users collateral balance");
     });
   });
   describe("withdraw()", function() {
     it("should revert if there not sufficient collateral", async function() {
       shouldFail.reverting(this.erc20Teller.withdraw(amount), { from: user });
     });
-    it("should transfer the collateral token to the user", async function() {});
-    it("should decrease the users collateral balance", async function() {});
+    it("should transfer the collateral token to the user");
+    it("should decrease the users collateral balance");
   });
 });

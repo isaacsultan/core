@@ -88,20 +88,7 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
           totalCollateralValue: expectedTCV
         });
       });
-      it("should emit an event with the correct liquidation ratio", async function() {
-        const { logs } = await this.compliance.collateralizationParams(0);
-        const expectedLR = "401604238211331150073951840663855423727"; // TODO: 4.016042382113311500739518406638554237279521015706930464939...
-
-        expectEvent.inLogs(
-          logs,
-          "CollateralizationParameters",
-          {
-            id: "0",
-            liquidationRatio: expectedLR
-          },
-          true
-        );
-      });
+      it("should emit an event with the correct liquidation ratio");
     });
     describe("#collateralizationParamsAfterChange", function() {
       const collateral = toBytes("DAI");
@@ -116,41 +103,8 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
           )
         );
       });
-      it("should emit an event with the correct total collateral value", async function() {
-        const {
-          logs
-        } = await this.compliance.collateralizationParamsAfterChange(
-          0,
-          collateral,
-          amount
-        );
-        const expectedTCV = new wad(17558, 0); // TODO: FIX!
-
-        expectEvent.inLogs(logs, "CollateralizationParameters", {
-          id: new BN(0),
-          totalCollateralValue: expectedTCV
-        });
-      });
-      it("should emit an event with the correct liquidation ratio", async function() {
-        const {
-          logs
-        } = await this.compliance.collateralizationParamsAfterChange(
-          0,
-          collateral,
-          amount
-        );
-        const expectedLR = "6598647125140924464487034949267192785"; // // TODO: FIX!
-
-        expectEvent.inLogs(
-          logs,
-          "CollateralizationParameters",
-          {
-            id: "0",
-            liquidationRatio: expectedLR
-          },
-          true
-        );
-      });
+      it("should emit an event with the correct total collateral value");
+      it("should emit an event with the correct liquidation ratio");
     });
   });
 });
