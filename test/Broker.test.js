@@ -137,17 +137,10 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
   describe("offerCollateral()", function() {
     const amount = wad(1, 0);
     beforeEach(async function() {
-      //await this.managingDirector.addBrokerRole(brokerRole, {
-      //  from: adminRole
-      //});
       await this.broker.approveProduct(product, toBytes("BTC"), {
         from: adminRole
       });
       await this.broker.agree(product, { from: user });
-    });
-    it("should pass", async function() {
-      const one = 1;
-      one.should.equal(1);
     });
     it("should require a valid collateral type", async function() {
       await shouldFail.reverting(
@@ -155,16 +148,17 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
       );
     });
     it("should require a valid agreementID", async function() {
+      const invalidId = new BN(5);
       await shouldFail.reverting(
-        this.broker.offerCollateral(0, eth, amount, { from: user })
+        this.broker.offerCollateral(invalidId, eth, amount, { from: user })
       );
     });
     it("should revert if agreement already fully collateralized", async function() {
-      await this.managingDirector.increaseAgreementCollateral(
+      await this.broker.offerCollateral(
         id,
         dai,
         wad(10000, 0),
-        { from: this.broker.address }
+        { from: user }
       );
       shouldFail.reverting(this.broker.offerCollateral(id, dai, wad(1, 0)), {
         from: user

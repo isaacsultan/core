@@ -11,13 +11,30 @@
     "compile": "truffle compile"
   },
   "author": "Isaac Sultan",
-  "license": "Apache License, Version 2.0",
+  "license": "Apache-2.0",
   "dependencies": {
+    "chainlink": "github:smartcontractkit/chainlink",
     "openzeppelin-solidity": "^2.1.2",
     "openzeppelin-test-helpers": "^0.1.2"
   },
   "devDependencies": {
     "truffle": "^5.0.4",
     "ganache-cli": "^6.3.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/partial-f/core.git"
+  },
+  "keywords": [
+    "ethereum",
+    "decentralized",
+    "finance",
+    "derivatives",
+    "token",
+    "cryptocurrency"
+  ],
+  "bugs": {
+    "url": "https://github.com/partial-f/core/issues"
+  },
+  "homepage": "https://github.com/partial-f/core#readme"
 }

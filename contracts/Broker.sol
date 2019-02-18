@@ -118,7 +118,7 @@ contract Broker {
         emit AgreementTransfer(_agreementId, msg.sender, _to);
     }
 
-    function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable { //check logic
+    function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable { //TODO: return excess collateral?
         (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
         
