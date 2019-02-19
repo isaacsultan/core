@@ -35,8 +35,8 @@ contract IManagingDirector {
     function agreementOwner(uint) public view returns (address);
 }
 
-contract IBasicTokenFactory {
-    function basicTokens(uint) public view returns (IERC777);
+contract IAdvancedTokenFactory {
+    function advancedTokens(uint) public view returns (IERC777);
 }
 
 
@@ -74,7 +74,7 @@ contract Broker {
     Roles.Role private adminRole;
 
     IManagingDirector public managingDirector;
-    IBasicTokenFactory public basicTokenFactory;
+    IAdvancedTokenFactory public advancedTokenFactory;
     ICompliance public compliance;
     uint256 public offerFee;
     IEthTeller public ethTeller;
@@ -91,7 +91,7 @@ contract Broker {
 
     constructor(address _managingDirector, address _btFactory, address _compliance, address _ethTeller, address _erc20TellerFactory, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
-        basicTokenFactory = IBasicTokenFactory(_btFactory);
+        advancedTokenFactory = IAdvancedTokenFactory(_btFactory);
         compliance = ICompliance(_compliance);
         ethTeller = IEthTeller(_ethTeller);
         erc20TellerFactory = IErc20TellerFactory(_erc20TellerFactory);
@@ -107,7 +107,7 @@ contract Broker {
     function agree(bytes32 _product) public returns (uint) {
         require(productToUnderlying[_product] != 0, "Product is unapproved");
         uint agreementId = managingDirector.originateAgreement(msg.sender, _product);
-        basicTokenFactory.basicTokens(0).authorizeOperator(msg.sender);  //TODO
+        advancedTokenFactory.advancedTokens(0).authorizeOperator(msg.sender);  //TODO
         emit NewAgreement(msg.sender, agreementId, _product);
         return agreementId;
     }

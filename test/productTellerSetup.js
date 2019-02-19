@@ -1,7 +1,7 @@
 const { BN } = require("openzeppelin-test-helpers");
 
 const Liquidator = artifacts.require("Liquidator");
-const BasicTokenFactory = artifacts.require("BasicTokenFactory");
+const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
 const Broker = artifacts.require("Broker");
 const ManagingDirector = artifacts.require("ManagingDirector");
 const Compliance = artifacts.require("Compliance");
@@ -33,17 +33,17 @@ async function setup(adminRole, brokerRole) {
   );
   const erc20TellerFactory = await Erc20TellerFactory.new(adminRole);
   const ethTeller = await EthTeller.new(managingDirector.address, adminRole);
-  const basicTokenFactory = await BasicTokenFactory.new(adminRole);
+  const advancedTokenFactory = await AdvancedTokenFactory.new(adminRole);
   const broker = await Broker.new(
     managingDirector.address,
-    basicTokenFactory.address,
+    advancedTokenFactory.address,
     compliance.address,
     ethTeller.address,
     erc20TellerFactory.address,
     adminRole
   );
 
-  await basicTokenFactory.makeBasicToken(
+  await advancedTokenFactory.makeAdvancedToken(
     "PF-Delta",
     "DLT",
     granularity,
@@ -52,7 +52,7 @@ async function setup(adminRole, brokerRole) {
     initialSupply,
     { from: adminRole }
   );
-  await basicTokenFactory.makeBasicToken(
+  await advancedTokenFactory.makeAdvancedToken(
     "PF-ConverseTrackingBitcoin",
     "CTB",
     granularity,
@@ -62,8 +62,8 @@ async function setup(adminRole, brokerRole) {
     { from: adminRole }
   );
 
-  const productToken = await basicTokenFactory.basicTokens(1);
-  const deltaToken = await basicTokenFactory.basicTokens(0);
+  const productToken = await advancedTokenFactory.advancedTokens(1);
+  const deltaToken = await advancedTokenFactory.advancedTokens(0);
 
   return [
     productTellerFactory,

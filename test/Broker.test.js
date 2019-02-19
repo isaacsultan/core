@@ -11,7 +11,7 @@ const toBytes = web3.utils.utf8ToHex;
 const padRight = web3.utils.padRight;
 const { wad, ray } = require("./fixedPoint");
 
-const BasicTokenFactory = artifacts.require("BasicTokenFactory");
+const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
 const Broker = artifacts.require("Broker");
 const ManagingDirector = artifacts.require("ManagingDirector");
 const Compliance = artifacts.require("Compliance");
@@ -35,8 +35,8 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
       this.managingDirector.address,
       adminRole
     );
-    this.basicTokenFactory = await BasicTokenFactory.new(adminRole);
-    this.basicTokenFactory.makeBasicToken(
+    this.advancedTokenFactory = await AdvancedTokenFactory.new(adminRole);
+    this.advancedTokenFactory.makeAdvancedToken(
       "Delta",
       "DLT",
       new BN(18),
@@ -53,7 +53,7 @@ contract("Broker", function([_, adminRole, brokerRole, user, userTwo]) {
     );
     this.broker = await Broker.new(
       this.managingDirector.address,
-      this.basicTokenFactory.address,
+      this.advancedTokenFactory.address,
       this.compliance.address,
       this.ethTeller.address,
       this.erc20TellerFactory.address,

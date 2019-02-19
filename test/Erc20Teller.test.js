@@ -15,8 +15,8 @@ const { wad, ray } = require("./fixedPoint");
 
 const ManagingDirector = artifacts.require("ManagingDirector");
 const Erc20Teller = artifacts.require("Erc20Teller");
-const BasicTokenFactory = artifacts.require("BasicTokenFactory");
-const BasicToken = artifacts.require("ERC777");
+const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
+const AdvancedToken = artifacts.require("ERC777");
 
 contract("Erc20Teller", function([_, adminRole, user]) {
   const dai = toBytes("DAI");
@@ -27,9 +27,9 @@ contract("Erc20Teller", function([_, adminRole, user]) {
       toBytes("inverse"),
       adminRole
     );
-    this.basicTokenFactory = await BasicTokenFactory.new(adminRole);
+    this.advancedTokenFactory = await AdvancedTokenFactory.new(adminRole);
     const approvedOperators = [adminRole];
-    await this.basicTokenFactory.makeBasicToken(
+    await this.advancedTokenFactory.makeAdvancedToken(
       toBytes("MakerDao-DAI"),
       dai,
       new BN(18),
@@ -38,8 +38,8 @@ contract("Erc20Teller", function([_, adminRole, user]) {
       new BN(100000000),
       { from: adminRole }
     );
-    const daiAddress = await this.basicTokenFactory.basicTokens(0);
-    this.daiToken = await BasicToken.at(daiAddress);
+    const daiAddress = await this.advancedTokenFactory.advancedTokens(0);
+    this.daiToken = await AdvancedToken.at(daiAddress);
 
     this.erc20Teller = await Erc20Teller.new(
       this.managingDirector.address,

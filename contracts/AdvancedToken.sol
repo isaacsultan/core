@@ -25,20 +25,20 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 
 
-contract BasicTokenFactory {
+contract AdvancedTokenFactory {
     using Roles for Roles.Role;
     Roles.Role private adminRole;
 
-    ERC777[] public basicTokens;
-    mapping(address => bool) public basicTokenRegistry;
+    ERC777[] public advancedTokens;
+    mapping(address => bool) public advancedTokenRegistry;
 
     constructor(address _adminRole) public {
         adminRole.add(_adminRole);
     }
 
-    event NewBasicToken(string name, string symbol, uint256 granularity, uint256 initialSupply);
+    event NewAdvancedToken(string name, string symbol, uint256 granularity, uint256 initialSupply);
 
-    function makeBasicToken
+    function makeAdvancedToken
     (
         string memory _name,
         string memory _symbol,
@@ -52,13 +52,13 @@ contract BasicTokenFactory {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         ERC777 newContract = new ERC777(_name, _symbol, _granularity, _defaultOperators, _burnOperator, _initialSupply, "", "");
 
-        basicTokens.push(newContract);
-        basicTokenRegistry[address(newContract)] = true;
-        emit NewBasicToken(_name, _symbol, _granularity, _initialSupply);
+        advancedTokens.push(newContract);
+        advancedTokenRegistry[address(newContract)] = true;
+        emit NewAdvancedToken(_name, _symbol, _granularity, _initialSupply);
     }
 
     function verify(address contractAddress) public view returns (bool) {
-        return basicTokenRegistry[contractAddress];
+        return advancedTokenRegistry[contractAddress];
     }
 }
 

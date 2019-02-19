@@ -9,9 +9,9 @@ const {
 } = require("openzeppelin-test-helpers");
 const toBytes = web3.utils.utf8ToHex;
 
-const BasicTokenFactory = artifacts.require("BasicTokenFactory");
+const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
 
-contract("BasicTokenFactory", function([_, adminRole]) {
+contract("AdvancedTokenFactory", function([_, adminRole]) {
   const name = "ConverseTrackingBitcoin";
   const symbol = "CTB";
   const granularity = new BN(18);
@@ -20,12 +20,12 @@ contract("BasicTokenFactory", function([_, adminRole]) {
   const initialSupply = new BN(100000000);
 
   beforeEach(async function() {
-    this.basicTokenFactory = await BasicTokenFactory.new(adminRole);
+    this.AdvancedTokenFactory = await AdvancedTokenFactory.new(adminRole);
   });
-  describe("#makeBasicToken", function() {
+  describe("#makeAdvancedToken", function() {
     it("reverts if not called by an admin", async function() {
       shouldFail.reverting(
-        this.basicTokenFactory.makeBasicToken(
+        this.AdvancedTokenFactory.makeAdvancedToken(
           name,
           symbol,
           granularity,
@@ -36,7 +36,7 @@ contract("BasicTokenFactory", function([_, adminRole]) {
       );
     });
     it("adds a new token", async function() {
-      const { logs } = await this.basicTokenFactory.makeBasicToken(
+      const { logs } = await this.AdvancedTokenFactory.makeAdvancedToken(
         name,
         symbol,
         granularity,
@@ -45,7 +45,7 @@ contract("BasicTokenFactory", function([_, adminRole]) {
         initialSupply,
         { from: adminRole }
       );
-      expectEvent.inLogs(logs, "NewBasicToken", {
+      expectEvent.inLogs(logs, "NewAdvancedToken", {
         name: name,
         symbol: symbol,
         granularity: granularity,
@@ -55,7 +55,7 @@ contract("BasicTokenFactory", function([_, adminRole]) {
   });
   describe("#verify", function() {
     it("should check if a token contract exists", async function() {
-        await this.basicTokenFactory.makeBasicToken(
+        await this.AdvancedTokenFactory.makeAdvancedToken(
             name,
             symbol,
             granularity,
@@ -64,8 +64,8 @@ contract("BasicTokenFactory", function([_, adminRole]) {
             initialSupply,
             { from: adminRole }
           );
-        const tokenAddress = await this.basicTokenFactory.basicTokens(0);
-        (await this.basicTokenFactory.verify(tokenAddress)).should.be.true;
+        const tokenAddress = await this.AdvancedTokenFactory.advancedTokens(0);
+        (await this.AdvancedTokenFactory.verify(tokenAddress)).should.be.true;
     })
   });
 });
