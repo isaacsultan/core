@@ -10,6 +10,7 @@ const {
 const toBytes = web3.utils.utf8ToHex;
 
 const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
+const AdvancedToken = artifacts.require("ERC777");
 
 contract("AdvancedTokenFactory", function([_, adminRole]) {
   const name = "ConverseTrackingBitcoin";
@@ -51,6 +52,18 @@ contract("AdvancedTokenFactory", function([_, adminRole]) {
         granularity: granularity,
         initialSupply: initialSupply
       });
+    });
+    it("should instantiate an AdvancedToken at the correct address", async function () {
+      await this.AdvancedTokenFactory.makeAdvancedToken(
+        name,
+        symbol,
+        granularity,
+        approvedOperators,
+        burnOperator,
+        initialSupply,
+        { from: adminRole }
+      );
+      await AdvancedToken.at(await this.AdvancedTokenFactory.advancedTokens(0));
     });
   });
   describe("#verify", function() {
