@@ -125,7 +125,8 @@ contract ProductTeller {
     ICompliance public compliance;
     IBroker public broker;
 
-    event LiquidationRatio(uint256 agreementId, uint256 ratio);
+    event ProductWithdraw(bytes32 productType, address client, uint agreementId, uint amount, uint feePaid);
+    event ProductPay(bytes32 productType, address client, uint agreementId, uint amount);
 
     constructor
     (
@@ -155,42 +156,43 @@ contract ProductTeller {
         productFee = _productFee;
     }
 
-    function withdraw(uint256 _agreementId, uint256 amount) public {
+    function withdraw(uint256 _agreementId, uint256 _amount) public {
         (, uint pd, uint tp,) =
             managingDirector.agreements(_agreementId);
-
         require(pd == 0, "Product already minted");
 
-        uint deltaFee = DSMath.rmul(DSMath.rmul(amount, tp), productFee);
+         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
+        require(Economics.collateralized(liquidationRatio, totalCollateralValue, _amount), "Uncollateralized!");
+
+        uint deltaFee = DSMath.rmul(DSMath.rmul(_amount, tp), productFee);
         delta.operatorBurn(msg.sender, deltaFee, "", ""); 
-
-        (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
-        emit LiquidationRatio(_agreementId, liquidationRatio);
-
-        require(Economics.collateralized(liquidationRatio, totalCollateralValue, amount), "Uncollateralized!");
         
-        product.mint(msg.sender, amount, "");
-        managingDirector.modifyAgreementProduct(_agreementId, amount);
+        product.mint(msg.sender, _amount, "");
+        managingDirector.modifyAgreementProduct(_agreementId, _amount);
+        
+        emit ProductWithdraw(productType, msg.sender, _agreementId, _amount, deltaFee);
     }
 
-    function pay(uint256 agreementId, uint256 amount) public {
+    function pay(uint256 _agreementId, uint256 _amount) public {
         
         (bytes32 pt, uint pd, uint tp, uint up) =
-            managingDirector.agreements(agreementId);
+            managingDirector.agreements(_agreementId);
 
         uint256 newTargetPrice = ticker.getPrice(pt);
         uint256 newUnderlyingPrice = ticker.getPrice(broker.productToUnderlying(pt));
             
         uint256 dd = Economics.dynamicDebt(up, newUnderlyingPrice, tp, newTargetPrice, pd);
-        uint256 diff = DSMath.sub(dd, amount); 
-        product.operatorBurn(msg.sender, amount, "", "");
+        uint256 diff = DSMath.sub(dd, _amount); 
+        product.operatorBurn(msg.sender, _amount, "", "");
+        delta.operatorBurn(msg.sender, _amount, "", ""); //TODO: Check
+
         if (diff > 0) {
-            delta.operatorBurn(msg.sender, amount, "", "");
-            liquidator.resetTime(agreementId);
-            managingDirector.resetAgreement(agreementId, diff, newTargetPrice, newUnderlyingPrice);
+            liquidator.resetTime(_agreementId);
+            managingDirector.resetAgreement(_agreementId, diff, newTargetPrice, newUnderlyingPrice);
         } else {
-           managingDirector.liquidateAgreement(agreementId);
+           managingDirector.liquidateAgreement(_agreementId);
         }
+        emit ProductPay(productType, msg.sender, _agreementId, _amount);
     }
 
 }

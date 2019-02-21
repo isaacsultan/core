@@ -2,215 +2,160 @@ const {
   BN,
   expectEvent,
   shouldFail,
-  constants,
-  balance,
-  send,
-  ether
+  time
 } = require("openzeppelin-test-helpers");
+const setup = require("./productTellerSetup");
 const toBytes = web3.utils.utf8ToHex;
 const padRight = web3.utils.padRight;
 const { wad, ray } = require("./fixedPoint");
-const setup = require("./productTellerSetup");
 
-contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
+const ProductTeller = artifacts.require("ProductTeller");
+const AdvancedToken = artifacts.require("ERC777");
+
+contract("ProductTeller", function([_, adminRole, brokerRole, user]) {
   const productType = toBytes("CTB");
-  const granularity = new BN(18);
-  const burnOperator = adminRole;
-  const approvedOperators = [adminRole];
-  const initialSupply = new BN(100000000);
+  const productFee = wad(2, 2);
+  const id = new BN(0);
+  const amount = wad(2, 0);
+  const smallerAmount = wad(1, 0);
   let productTellerFactory,
+    productTeller,
     managingDirector,
     broker,
-    productToken,
-    deltaToken,
+    productAddress,
+    deltaAddress,
     ticker,
     liquidator,
-    compliance;
+    compliance,
+    delta,
+    product;
   beforeEach(async function() {
     [
       productTellerFactory,
       managingDirector,
       broker,
-      productToken,
-      deltaToken,
+      productAddress,
+      deltaAddress,
       ticker,
       liquidator,
       compliance
-    ] = await setup(adminRole, brokerRole);
-  });
-  describe("#makeErc20Teller", function() {
-    it("reverts if not called by an admin", async function() {
-      shouldFail.reverting(
-        productTellerFactory.makeProductTeller(
-          productType,
-          managingDirector.address,
-          broker.address,
-          productToken,
-          deltaToken,
-          ticker.address,
-          liquidator.address,
-          compliance.address,
-          adminRole
-        )
-      );
-    });
-    it("adds a new token", async function() {
-      const { logs } = await productTellerFactory.makeProductTeller(
-        productType,
-        managingDirector.address,
-        broker.address,
-        productToken,
-        deltaToken,
-        ticker.address,
-        liquidator.address,
-        compliance.address,
-        adminRole,
-        { from: adminRole }
-      );
-      expectEvent.inLogs(logs, "NewProductTeller", {
-        productType: padRight(productType, 64),
-        productToken: productToken
-      });
-    });
-  });
-  describe("#verify", function() {
-    it("should check if a token contract exists", async function() {
-      await productTellerFactory.makeProductTeller(
-        productType,
-        managingDirector.address,
-        broker.address,
-        productToken,
-        deltaToken,
-        ticker.address,
-        liquidator.address,
-        compliance.address,
-        adminRole,
-        { from: adminRole }
-      );
-      const tokenAddress = await productTellerFactory.productTellers(0);
-      (await productTellerFactory.verify(tokenAddress)).should.be.true;
-    });
-  });
-});
-
-contract("ProductTeller", function([_, adminRole, brokerRole]) {
-  const productFee = new BN(0.5);
-  const productType = toBytes("CTB");
-  let managingDirector, broker;
-  beforeEach(async function() {
-    let [
-      productTellerFactory,
-      managingDirector,
-      broker,
-      productToken,
-      deltaToken,
-      ticker,
-      liquidator,
-      compliance
-    ] = await setup(adminRole, brokerRole);
-
-    await productTellerFactory.makeProductTeller(
+    ] = await setup(adminRole, brokerRole, user);
+    productTeller = await ProductTeller.new(
       productType,
       managingDirector.address,
       broker.address,
-      productToken,
-      deltaToken,
+      productAddress,
+      deltaAddress,
       ticker.address,
       liquidator.address,
       compliance.address,
-      adminRole,
-      { from: adminRole }
+      adminRole
     );
-    this.productTeller = await productTellerFactory.productTellers(0);
-    console.log(this.productTeller.address);
+    delta = await AdvancedToken.at(deltaAddress);
+    product = await AdvancedToken.at(productAddress);
+
+    const fundAmount = new BN(10);
+    await delta.approve(user, fundAmount, {from: adminRole});
+    await delta.transferFrom(adminRole, user, amount, {from:user});
   });
+
   describe("setProductFee", function() {
     it("should allow an admin to set a product fee", async function() {
-      this.productTeller.setProductFee(productFee, { from: adminRole }); //TODO: set correct scale of fee
+      productTeller.setProductFee(productFee, { from: adminRole });
     });
   });
   describe("withdraw()", function() {
     beforeEach(async function() {
-      await broker.approveProduct(toBytes("CTB"), toBytes("BTC"));
-      await broker.agree(toBytes("CTB"));
-      this.productTeller.setProductFee(1, { from: adminRole }); //TODO: set correct scale of fee
+      await broker.approveProduct(productType, toBytes("BTC"), {
+        from: adminRole
+      });
+      await broker.agree(productType, { from: user });
+      productTeller.setProductFee(productFee, { from: adminRole });
     });
-    it("should only mints product tokens when there is no debt", async function() {
-      await this.productTeller.withdraw(0, 1);
+    it("should revert when there is already a debt", async function() {
+      await broker.offerCollateral(id, toBytes("ETH"), new BN(10), {
+        from: user
+      });
+      await productTeller.withdraw(id, amount);
+      await shouldFail.reverting(
+        productTeller.withdraw(id, amount, { from: user })
+      );
+    });
+    it("should revert if agreement is uncollaterized", async function() {
+      await shouldFail.reverting(
+        productTeller.withdraw(id, amount, { from: user })
+      );
+    });
+    it("should emit an event", async function() {
+      await broker.offerCollateral(id, toBytes("ETH"), new BN(10), {
+        from: user
+      });
+      const { logs } = await productTeller.withdraw(id, amount, { from: user });
 
-      await shouldFail.reverting(this.productTeller.withdraw(0, 1));
+      expectEvent.inLogs(logs, "ProductWithdraw", {
+        productType: padRight(productType, 64),
+        client: user,
+        agreementId: id,
+        amount: amount,
+        feePaid: 1 //TODO: fee paid
+      });
     });
     it("should take a product fee", async function() {
-      const amount = 2;
-      const fee = amount * 500 * productFee;
-      await broker.offerCollateral(0, toBytes("ETH"), 10);
+      await broker.offerCollateral(id, toBytes("ETH"), new BN(10), {
+        from: user
+      });
+      await productTeller.withdraw(id, amount, { from: user });
 
-      const { logs } = await this.productTeller.withdraw(0, amount);
-      expectEvent.inLogs(logs, "Burned", { from: msg.sender, amount: fee });
+      (await delta.balanceOf(user)).should.be.bignumber.equal(expectedAmount);
     });
-    it("should calculate the liquidation ratio correctly", async function() {
-      //TODO: fix values
-      const ethAmount = 1.53457212312387623;
-      await broker.offerCollateral(0, toBytes("ETH"), ethAmount);
-      const daiAmount = 100.26348934940293934;
-      await broker.offerCollateral(0, toBytes("DAI"), daiAmount);
-      const wbtcAmount = 0.5689403404820349;
-      await broker.offerCollateral(0, toBytes("WBTC"), wbtcAmount);
+    it("should give client product tokens", async function() {
+      await broker.offerCollateral(id, toBytes("ETH"), new BN(10), {
+        from: user
+      });
+      await productTeller.withdraw(id, amount, { from: user });
 
-      const tcv = ethAmount * 100 + daiAmount * 1 + wbtcAmount * 3500;
-      const denom =
-        (ethAmount * 100) / 1.5 +
-        (daiAmount * 1) / 1.01 +
-        (wbtcAmount * 3500) / 1.2;
-      const expectedLR = tcv / denom;
-
-      const { logs } = await this.productTeller.withdraw(0, 1.5);
-      expectEvent.inLogs(logs, "LiquidationRatio", { amount: expectedLR });
-    });
-    it("should not allow withdrawal if the agreement is uncollaterized", async function() {
-      await shouldFail.reverting(this.productTeller.withdraw(0, 1));
+      (await product.balanceOf(user)).should.be.bignumber.equal(amount);
     });
   });
-
   describe("pay()", function() {
+    const fullAmount = new BN(2);
+    const partialAmount = new BN(1);
     beforeEach(async function() {
-      await this.broker.offerCollateral(0, toBytes("ETH"), 10);
-      await this.productTeller.withdraw(0, 1);
-    });
-    it("should burn the product tokens", async function() {
-      const tokenAmount = 1;
-      const { logs } = await this.productTeller.pay(0, tokenAmount);
-      expectEvent.inLogs(logs, "Burned", {
-        from: msg.sender,
-        amount: tokenAmount
+      await broker.offerCollateral(id, toBytes("ETH"), new BN(10), {
+        from: user
       });
+      await productTeller.withdraw(id, amount, { from: user });
+    });
+    it("should burn product tokens", async function() {
+      await productTeller.pay(id, fullAmount, { from: user });
+      (await product.balanceOf(user)).should.be.bignumber.equal(fullAmount);
+    });
+    it("should burn delta tokens", async function() {
+      await productTeller.pay(id, fullAmount, { from: user });
+      (await delta.balanceOf(user)).should.be.bignumber.equal(new BN(9));
     });
     context("when the debt is partially paid", function() {
-      beforeEach(async function() {
-        const { logs } = await this.productTeller.pay(0, 0.75);
-      });
-      it("should take a new fee", async function() {
-        expectEvent.inLogs(logs, "Burned", {
-          from: msg.sender,
-          amount: tokenAmount
-        }); //check
-      });
       it("should reset liquidation time", async function() {
-        const newTime = 0; //TODO
-        expectEvent.inLogs(logs, "ResetLiquidation", {
-          agreementId: 0,
-          time: newTime
-        });
+        await time.advanceBlock();
+        const latestTime = time.latest();
+        await productTeller.pay(id, partialAmount);
+        (await liquidator.liquidationTimes(id)).should.equal(latestTime);
       });
       it("should modify the agreement", async function() {
-        const agreement = await managingDirector.agreements(0);
-        agreement.productDebt.should.equal(0.25);
+        const agreement = await managingDirector.agreements(id);
+        agreement.productDebt.should.be.bignumber.equal(new BN(1));
       });
     });
     context("when the debt is fully paid", function() {
-      it("should liquidate the agreement", async function() {
-        await this.productTeller.pay(0, 1);
-        //TODO
+      it("should liquidate the agreement");
+    });
+    it("should emit an event", async function() {
+      const { logs } = await productTeller.pay(id, new BN(1), { from: user });
+      expectEvent.inLogs(logs, "ProductPay", {
+        productType: padRight(productType, 64),
+        client: user,
+        agreementId: id,
+        amount: amount
       });
     });
   });
