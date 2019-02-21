@@ -117,21 +117,25 @@ contract("Erc20Teller", function([_, adminRole, user]) {
       await this.erc20Teller.deposit(convertedAmount, { from: user });
     });
     it("should revert if there not sufficient collateral", async function() {
-      shouldFail.reverting(this.erc20Teller.withdraw(convertedAmount), { from: user });
+      shouldFail.reverting(this.erc20Teller.withdraw(convertedAmount), {
+        from: user
+      });
     });
     it("should transfer the collateral token to the user", async function() {
       await this.erc20Teller.withdraw(convertedSmallerAmount, { from: user });
-      const expectedAmount = convertedAmount.sub(convertedAmount);
-      (await this.daiToken.balanceOf(user)).should.be.bignumber.equal(expectedAmount);
+
+      (await this.daiToken.balanceOf(user)).should.be.bignumber.equal(
+        new BN(1)
+      );
     });
     it("should decrease the users collateral balance", async function() {
+
       await this.erc20Teller.withdraw(convertedSmallerAmount, { from: user });
 
-      const expectedAmount = convertedAmount.sub(convertedAmount);
       (await this.managingDirector.clientCollateral(
         user,
         dai
-      )).should.be.bignumber.equal(expectedAmount);
+      )).should.be.bignumber.equal(new BN(1));
     });
     it("should emit an event", async function() {
       const { logs } = await this.erc20Teller.withdraw(convertedSmallerAmount, {

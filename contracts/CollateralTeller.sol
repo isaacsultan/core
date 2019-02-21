@@ -24,6 +24,8 @@ import "./Math.sol";
 
 contract IErc20 {
     function transferFrom(address, address, uint) public returns (bool);
+    function approve(address, uint256) public returns (bool);
+    function transfer(address to, uint256 value) public returns (bool);
 }
 
 
@@ -74,7 +76,9 @@ contract Erc20Teller {
     uint public constant ONE = 10**27;
 
     event Erc20TellerParams(bytes32 tellerType, address tokenAddress, uint liquidityRatio, uint liquidationFee);
-    
+    event CollateralDeposit(address client, bytes32 tellerType, uint amount);
+    event CollateralWithdraw(address client, bytes32 tellerType, uint amount);
+
     constructor(address _managingDirector, bytes32 _collateralType, address _collateralToken, address _adminRole) public { //TODO: Restrict permision to factory
         managingDirector = IManagingDirector(_managingDirector);
         collateralType = _collateralType;
@@ -92,12 +96,14 @@ contract Erc20Teller {
     function deposit(uint _amount) public {
         require(collateralToken.transferFrom(msg.sender, address(this), _amount));
         managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, _amount);
+        emit CollateralDeposit(msg.sender, collateralType, _amount);
     }
 
     function withdraw(uint _amount) public {
         require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
-        require(collateralToken.transferFrom(address(this), msg.sender, _amount));
+        require(collateralToken.transfer(msg.sender, _amount));
         managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
+        emit CollateralWithdraw(msg.sender, collateralType, _amount);
     }
 }
 
