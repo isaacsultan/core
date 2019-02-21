@@ -12,13 +12,13 @@ const { wad, ray } = require("./fixedPoint");
 const setup = require("./productTellerSetup");
 const ProductTeller = artifacts.require("ProductTeller");
 
-contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
+contract("ProductTellerFactory", function([_, adminRole, brokerRole, user]) {
   const productType = toBytes("CTB");
   let productTellerFactory,
     managingDirector,
     broker,
-    productToken,
-    deltaToken,
+    productTokenAddress,
+    deltaTokenAddress,
     ticker,
     liquidator,
     compliance;
@@ -27,8 +27,8 @@ contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
       productTellerFactory,
       managingDirector,
       broker,
-      productToken,
-      deltaToken,
+      productTokenAddress,
+      deltaTokenAddress,
       ticker,
       liquidator,
       compliance
@@ -41,8 +41,8 @@ contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
           productType,
           managingDirector.address,
           broker.address,
-          productToken,
-          deltaToken,
+          productTokenAddress,
+          deltaTokenAddress,
           ticker.address,
           liquidator.address,
           compliance.address,
@@ -55,8 +55,8 @@ contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
         productType,
         managingDirector.address,
         broker.address,
-        productToken,
-        deltaToken,
+        productTokenAddress,
+        deltaTokenAddress,
         ticker.address,
         liquidator.address,
         compliance.address,
@@ -65,7 +65,7 @@ contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
       );
       expectEvent.inLogs(logs, "NewProductTeller", {
         productType: padRight(productType, 64),
-        productToken: productToken
+        productToken: productTokenAddress
       });
     });
     it("should instantiate a ProductTeller at the correct address", async function () {
@@ -73,8 +73,8 @@ contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
         productType,
         managingDirector.address,
         broker.address,
-        productToken,
-        deltaToken,
+        productTokenAddress,
+        deltaTokenAddress,
         ticker.address,
         liquidator.address,
         compliance.address,
@@ -90,8 +90,8 @@ contract("ProductTellerFactory", function([_, adminRole, brokerRole]) {
         productType,
         managingDirector.address,
         broker.address,
-        productToken,
-        deltaToken,
+        productTokenAddress,
+        deltaTokenAddress,
         ticker.address,
         liquidator.address,
         compliance.address,

@@ -9,6 +9,7 @@ const Ticker = artifacts.require("MockTicker");
 const ProductTellerFactory = artifacts.require("ProductTellerFactory");
 const Erc20TellerFactory = artifacts.require("Erc20TellerFactory");
 const EthTeller = artifacts.require("EthTeller");
+const AdvancedToken = artifacts.require("ERC777");
 
 const toBytes = web3.utils.utf8ToHex;
 
@@ -62,15 +63,15 @@ async function setup(adminRole, brokerRole) {
     { from: adminRole }
   );
 
-  const productToken = await advancedTokenFactory.advancedTokens(1);
-  const deltaToken = await advancedTokenFactory.advancedTokens(0);
+  const productTokenAddress = await advancedTokenFactory.advancedTokens(1);
+  const deltaTokenAddress = await advancedTokenFactory.advancedTokens(0);
 
   return [
     productTellerFactory,
     managingDirector,
     broker,
-    productToken,
-    deltaToken,
+    productTokenAddress,
+    deltaTokenAddress,
     ticker,
     liquidator,
     compliance
