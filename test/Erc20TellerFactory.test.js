@@ -13,13 +13,14 @@ const { wad, ray } = require("./fixedPoint");
 
 const ManagingDirector = artifacts.require("ManagingDirector");
 const Erc20TellerFactory = artifacts.require("Erc20TellerFactory");
-const EthTeller = artifacts.require("EthTeller");
+const ERC20Mock = artifacts.require("ERC20Mock");
 
-contract("Erc20TellerFactory", function([_, adminRole, brokerRole]) {
+
+contract("Erc20TellerFactory", function([_, adminRole, brokerRole, daiAddress]) {
   const collateralType = toBytes("DAI");
-  const collateralToken = "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359";
-
   beforeEach(async function() {
+    this.daiToken = await ERC20Mock.new(daiAddress, 100 * 10 ** 6);
+
     this.managingDirector = await ManagingDirector.new(
       toBytes("inverse"),
       adminRole
@@ -31,7 +32,7 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole]) {
       shouldFail.reverting(
         this.erc20TellerFactory.makeErc20Teller(
           collateralType,
-          collateralToken,
+          this.daiToken.address,
           this.managingDirector.address,
           adminRole
         )
@@ -40,14 +41,14 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole]) {
     it("adds a new token", async function() {
       const { logs } = await this.erc20TellerFactory.makeErc20Teller(
         collateralType,
-        collateralToken,
+        this.daiToken.address,
         this.managingDirector.address,
         adminRole,
         { from: adminRole }
       );
       expectEvent.inLogs(logs, "NewErc20Teller", {
         collateralType: padRight(collateralType, 64),
-        collateralToken: collateralToken
+        collateralToken: this.daiToken.address
       });
     });
   });
@@ -55,7 +56,7 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole]) {
     it("should check if a token contract exists", async function() {
       await this.erc20TellerFactory.makeErc20Teller(
         collateralType,
-        collateralToken,
+        this.daiToken.address,
         this.managingDirector.address,
         adminRole,
         { from: adminRole }

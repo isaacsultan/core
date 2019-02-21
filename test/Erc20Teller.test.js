@@ -17,13 +17,12 @@ const ManagingDirector = artifacts.require("ManagingDirector");
 const Erc20Teller = artifacts.require("Erc20Teller");
 const ERC20Mock = artifacts.require("ERC20Mock");
 
-contract("Erc20Teller", function([_, adminRole, user]) {
+contract("Erc20Teller", function([_, adminRole, user, daiAddress]) {
   const dai = toBytes("DAI");
   const amount = wad(2, 0);
   const smallerAmount = wad(1, 0);
-  let daiAddress, convertedAmount, convertedSmallerAmount;
+  let convertedAmount, convertedSmallerAmount;
   beforeEach(async function() {
-    daiAddress = (await web3.eth.getAccounts())[5];
     this.daiToken = await ERC20Mock.new(daiAddress, 100 * 10 ** 6);
     this.managingDirector = await ManagingDirector.new(
       toBytes("inverse"),
