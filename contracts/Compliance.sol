@@ -47,7 +47,9 @@ contract Compliance {
     }
 
     Collateral[] public collaterals;
+    mapping(bytes32 => bool) public approvedCollaterals;
     
+    event CollateralDetails(bytes32 name, uint price, uint value, uint ratio);
     event CollateralizationParameters(uint id, uint liquidationRatio, uint totalCollateralValue, uint denom);
 
     constructor(address _managingDirector, address _ticker, address _adminRole) public {
@@ -60,6 +62,7 @@ contract Compliance {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         Collateral memory collateral = Collateral(_type, _ratio);
         collaterals.push(collateral);
+        approvedCollaterals[_type] = true;
     }
 
     function collateralizationParams(uint _agreementId) public returns (uint, uint) {

@@ -45,6 +45,14 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
         compliance.addCollateralType(eth, ethRatio, { from: user })
       );
     });
+    it("should add an a collateral to the system", async function() {
+      compliance.addCollateralType(eth, ethRatio, { from: adminRole });
+      (await compliance.collaterals(0))["name"].should.equal(padRight(eth, 64));
+    });
+    it("should approve the collateral", async function() {
+      compliance.addCollateralType(eth, ethRatio, { from: adminRole });
+      (await compliance.approvedCollaterals(eth)).should.be.true;
+    });
   });
 
   describe("#collateralizationParams", function() {
