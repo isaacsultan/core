@@ -48,7 +48,7 @@ contract IERC777 {
 contract ICompliance {
     function collateralizationParams(uint) public returns (uint, uint);
     function collateralizationParamsAfterChange(uint, bytes32, uint) public returns (uint, uint);
-
+    function approvedCollaterals(bytes32) public view returns (bool);
 }
 
 
@@ -58,13 +58,13 @@ contract IErc20TellerFactory {
 
 
 contract IErc20Teller {
-    function deposit(uint _amount) public;
-    function withdraw(uint _amount) public;}
+    function deposit(address _sender, uint _amount) public;
+    function withdraw(address _sender, uint _amount) public;}
 
 
 contract IEthTeller {
-    function deposit() public payable;
-    function withdraw(uint _amount) public;
+    function deposit(address _sender) public payable;
+    function withdraw(address payable _sender, uint _amount) public;
 }
 
 
@@ -118,33 +118,40 @@ contract Broker {
         emit AgreementTransfer(_agreementId, msg.sender, _to);
     }
 
+    event Break1();
+    event Break2();
+
     function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable { //TODO: return excess collateral?
+        require(compliance.approvedCollaterals(_collateralType), "Collateral is Unapproved");
+        require(managingDirector.agreementOwner(_agreementId) != address(0), "Invalid agreementId");
+
         (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
-        (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
-        
-        require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt) == false, "Agreement is fully collateralized");
-
-        if (_collateralType == "ETH") {
-            ethTeller.deposit.value(_collateralChange);
-        } else {
-            IErc20Teller(erc20TellerFactory.contracts(_collateralType)).deposit(_collateralChange);
+        if (productDebt != 0) {
+            (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
+            require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt) == false, "Agreement is fully collateralized");
         }
-
-        managingDirector.increaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);
-        emit CollateralOffer(msg.sender, _agreementId, _collateralType, _collateralChange);
+        if (_collateralType == "ETH") {
+            ethTeller.deposit.value(msg.value)(msg.sender);
+            managingDirector.increaseAgreementCollateral(_agreementId, _collateralType, msg.value);
+            emit CollateralOffer(msg.sender, _agreementId, _collateralType, msg.value);
+        } else {
+            IErc20Teller(erc20TellerFactory.contracts(_collateralType)).deposit(msg.sender, _collateralChange);
+            managingDirector.increaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);
+            emit CollateralOffer(msg.sender, _agreementId, _collateralType, _collateralChange);
+        }
     }
 
     function withdrawCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public { 
-        require(msg.sender == managingDirector.agreementOwner(_agreementId), "Agreement not owned by client");
+        //require(msg.sender == managingDirector.agreementOwner(_agreementId), "Agreement not owned by client");
 
-        (, uint productDebt, , ) = managingDirector.agreements(_agreementId);
-        (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParamsAfterChange(_agreementId, _collateralType, _collateralChange);
-        require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt), "Withdrawal does not maintain agreement collateralization");
+        //(, uint productDebt, , ) = managingDirector.agreements(_agreementId);
+        //(uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParamsAfterChange(_agreementId, _collateralType, _collateralChange);
+        //require(Economics.collateralized(liquidationRatio, totalCollateralValue, productDebt), "Withdrawal does not maintain agreement collateralization");
 
         if (_collateralType == "ETH") {
-            ethTeller.withdraw(_collateralChange);
+            ethTeller.withdraw(msg.sender, _collateralChange);
         } else {
-            IErc20Teller(erc20TellerFactory.contracts(_collateralType)).withdraw(_collateralChange);
+            IErc20Teller(erc20TellerFactory.contracts(_collateralType)).withdraw(msg.sender, _collateralChange);
         }
 
         managingDirector.decreaseAgreementCollateral(_agreementId, _collateralType, _collateralChange);

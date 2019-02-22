@@ -74,7 +74,7 @@ contract("Erc20Teller", function([_, adminRole, user, daiAddress]) {
   describe("deposit()", function() {
     it("should revert if tokens are not approved for transfer", async function() {
       shouldFail.reverting(
-        this.erc20Teller.deposit(convertedAmount, { from: user })
+        this.erc20Teller.deposit(user, convertedAmount)
       );
     });
     context("tokens are approved by client", function() {
@@ -84,22 +84,20 @@ contract("Erc20Teller", function([_, adminRole, user, daiAddress]) {
         });
       });
       it("should transfer the collateral token to CollateralTeller", async function() {
-        await this.erc20Teller.deposit(convertedAmount, { from: user });
+        await this.erc20Teller.deposit(user, convertedAmount);
         (await this.daiToken.balanceOf(
           this.erc20Teller.address
         )).should.be.bignumber.equal(convertedAmount);
       });
       it("should increase the users collateral balance", async function() {
-        await this.erc20Teller.deposit(convertedAmount, { from: user });
+        await this.erc20Teller.deposit(user, convertedAmount);
         (await this.managingDirector.clientCollateral(
           user,
           dai
         )).should.be.bignumber.equal(convertedAmount);
       });
       it("should emit an event", async function() {
-        const { logs } = await this.erc20Teller.deposit(convertedAmount, {
-          from: user
-        });
+        const { logs } = await this.erc20Teller.deposit(user, convertedAmount);
         expectEvent.inLogs(logs, "CollateralDeposit", {
           client: user,
           tellerType: padRight(dai, 64),
@@ -113,23 +111,21 @@ contract("Erc20Teller", function([_, adminRole, user, daiAddress]) {
       await this.daiToken.approve(this.erc20Teller.address, convertedAmount, {
         from: user
       });
-      await this.erc20Teller.deposit(convertedAmount, { from: user });
+      await this.erc20Teller.deposit(user, convertedAmount);
     });
     it("should revert if there not sufficient collateral", async function() {
-      shouldFail.reverting(this.erc20Teller.withdraw(convertedAmount), {
-        from: user
-      });
+      const largerAmount = new BN(5);
+      shouldFail.reverting(this.erc20Teller.withdraw(user, largerAmount));
     });
     it("should transfer the collateral token to the user", async function() {
-      await this.erc20Teller.withdraw(convertedSmallerAmount, { from: user });
+      await this.erc20Teller.withdraw(user, convertedSmallerAmount);
 
       (await this.daiToken.balanceOf(user)).should.be.bignumber.equal(
         new BN(1)
       );
     });
     it("should decrease the users collateral balance", async function() {
-
-      await this.erc20Teller.withdraw(convertedSmallerAmount, { from: user });
+      await this.erc20Teller.withdraw(user, convertedSmallerAmount);
 
       (await this.managingDirector.clientCollateral(
         user,
@@ -137,9 +133,7 @@ contract("Erc20Teller", function([_, adminRole, user, daiAddress]) {
       )).should.be.bignumber.equal(new BN(1));
     });
     it("should emit an event", async function() {
-      const { logs } = await this.erc20Teller.withdraw(convertedSmallerAmount, {
-        from: user
-      });
+      const { logs } = await this.erc20Teller.withdraw(user, convertedSmallerAmount);
       expectEvent.inLogs(logs, "CollateralWithdraw", {
         client: user,
         tellerType: padRight(dai, 64),

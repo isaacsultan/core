@@ -93,17 +93,17 @@ contract Erc20Teller {
         emit Erc20TellerParams(collateralType, address(collateralToken), liquidityRatio, liquidationFee);
     }
     
-    function deposit(uint _amount) public {
-        require(collateralToken.transferFrom(msg.sender, address(this), _amount));
-        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, _amount);
-        emit CollateralDeposit(msg.sender, collateralType, _amount);
+    function deposit(address _sender, uint _amount) public {
+        require(collateralToken.transferFrom(_sender, address(this), _amount));
+        managingDirector.increaseClientCollateralBalance(_sender, collateralType, _amount);
+        emit CollateralDeposit(_sender, collateralType, _amount);
     }
 
-    function withdraw(uint _amount) public {
-        require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
-        require(collateralToken.transfer(msg.sender, _amount));
-        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
-        emit CollateralWithdraw(msg.sender, collateralType, _amount);
+    function withdraw(address _sender, uint _amount) public {
+        require(managingDirector.clientCollateral(_sender, collateralType) >= _amount);
+        require(collateralToken.transfer(_sender, _amount));
+        managingDirector.decreaseClientCollateralBalance(_sender, collateralType, _amount);
+        emit CollateralWithdraw(_sender, collateralType, _amount);
     }
 }
 
@@ -134,13 +134,13 @@ contract EthTeller {
         emit EthTellerParams(collateralType, liquidityRatio, liquidationFee);
     }
 
-    function deposit() public payable {
-        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, msg.value);
+    function deposit(address _sender) public payable {
+        managingDirector.increaseClientCollateralBalance(_sender, collateralType, msg.value);
     }
 
-    function withdraw(uint _amount) public {
-        require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
-        msg.sender.transfer(_amount);
-        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
+    function withdraw(address payable _sender, uint _amount) public {
+        require(managingDirector.clientCollateral(_sender, collateralType) >= _amount);
+        _sender.transfer(_amount);
+        managingDirector.decreaseClientCollateralBalance(_sender, collateralType, _amount);
     }
 }
