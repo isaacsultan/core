@@ -23,64 +23,72 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
   const daiRatio = ray(12, 1);
   const wbtcRatio = ray(135, 2);
   const daiAmount = wad(5234, 0);
+  let managingDirector, ticker, compliance;
   beforeEach(async function() {
-    this.managingDirector = await ManagingDirector.new(
+    managingDirector = await ManagingDirector.new(
       toBytes("inverse"),
       adminRole
     );
-    this.ticker = await Ticker.new(this.managingDirector.address);
-    await this.managingDirector.addBrokerRole(brokerRole, {
+    ticker = await Ticker.new(managingDirector.address);
+    await managingDirector.addBrokerRole(brokerRole, {
       from: adminRole
     });
-    this.compliance = await Compliance.new(
-      this.managingDirector.address,
-      this.ticker.address,
+    compliance = await Compliance.new(
+      managingDirector.address,
+      ticker.address,
       adminRole
     );
   });
   describe("#addCollateralType", function() {
     it("should revert if not called by an admin", async function() {
       shouldFail.reverting(
-        this.compliance.addCollateralType(eth, ethRatio, { from: user })
+        compliance.addCollateralType(eth, ethRatio, { from: user })
       );
     });
   });
-  context("collaterals ETH, DAI & WBTC have been approved", function() {
+
+  describe("#collateralizationParams", function() {
     beforeEach(async function() {
-      this.compliance.addCollateralType(eth, ethRatio, { from: adminRole });
-      this.compliance.addCollateralType(dai, daiRatio, { from: adminRole });
-      this.compliance.addCollateralType(wbtc, wbtcRatio, { from: adminRole });
-      await this.managingDirector.originateAgreement(user, toBytes("CTB"), {
+      await managingDirector.originateAgreement(user, toBytes("CTB"), {
         from: brokerRole
       });
-      const ethAmount = wad(123, 1);
-      const wbtcAmount = wad(317, 2);
-      await this.managingDirector.increaseAgreementCollateral(
-        0,
-        eth,
-        ethAmount,
-        {
-          from: brokerRole
-        }
-      );
-      await this.managingDirector.increaseAgreementCollateral(
-        0,
-        dai,
-        daiAmount,
-        {
-          from: brokerRole
-        }
-      );
-      await this.managingDirector.increaseAgreementCollateral(
-        0,
-        wbtc,
-        wbtcAmount,
-        { from: brokerRole }
-      );
     });
-    describe("#collateralizationParams", function() {
+    context("no collateral approved", function() {
+      it("should return zero values when there is no collateral in an agreement", async function() {
+        const { logs } = await compliance.collateralizationParams(0);
+        expectEvent.inLogs(logs, "CollateralizationParameters", {
+          id: new BN(0),
+          totalCollateralValue: new BN(0),
+          liquidationRatio: new BN(0)
+        });
+      });
+    });
+    context("collaterals ETH, DAI & WBTC have been approved", function() {
+      beforeEach(async function() {
+        await compliance.addCollateralType(eth, ethRatio, { from: adminRole });
+        await compliance.addCollateralType(dai, daiRatio, { from: adminRole });
+        await compliance.addCollateralType(wbtc, wbtcRatio, {
+          from: adminRole
+        });
+
+        const ethAmount = wad(123, 1);
+        console.log(ethAmount.toString());
+        const wbtcAmount = wad(317, 2);
+        await managingDirector.increaseAgreementCollateral(0, eth, ethAmount, {
+          from: brokerRole
+        });
+        await managingDirector.increaseAgreementCollateral(0, dai, daiAmount, {
+          from: brokerRole
+        });
+        await managingDirector.increaseAgreementCollateral(
+          0,
+          wbtc,
+          wbtcAmount,
+          { from: brokerRole }
+        );
+      });
       it("should emit an event with the correct total collateral value", async function() {
-        const { logs } = await this.compliance.collateralizationParams(0);
+        const { logs } = await compliance.collateralizationParams(0);
         const expectedTCV = new wad(17559, 0); // 17559
 
         expectEvent.inLogs(logs, "CollateralizationParameters", {
@@ -89,7 +97,7 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
         });
       });
       it("should emit an event with the correct liquidation ratio", async function() {
-        const { logs } = await this.compliance.collateralizationParams(0);
+        const { logs } = await compliance.collateralizationParams(0);
         const expectedLR = "401604238211331150073951840663855423727"; // TODO: 4.016042382113311500739518406638554237279521015706930464939...
 
         expectEvent.inLogs(
@@ -103,13 +111,40 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
         );
       });
     });
-    describe("#collateralizationParamsAfterChange", function() {
-      const collateral = toBytes("DAI");
-      const amount = daiAmount.sub(wad(10, 0));
+  });
+
+  describe("#collateralizationParamsAfterChange", function() {
+    const collateral = toBytes("DAI");
+    const amount = daiAmount.sub(wad(10, 0));
+    context("collaterals ETH, DAI & WBTC have been approved", function() {
+      beforeEach(async function() {
+        compliance.addCollateralType(eth, ethRatio, { from: adminRole });
+        compliance.addCollateralType(dai, daiRatio, { from: adminRole });
+        compliance.addCollateralType(wbtc, wbtcRatio, { from: adminRole });
+        await managingDirector.originateAgreement(user, toBytes("CTB"), {
+          from: brokerRole
+        });
+        const ethAmount = wad(123, 1);
+        console.log(ethAmount.toString());
+        const wbtcAmount = wad(317, 2);
+        await managingDirector.increaseAgreementCollateral(0, eth, ethAmount, {
+          from: brokerRole
+        });
+        await managingDirector.increaseAgreementCollateral(0, dai, daiAmount, {
+          from: brokerRole
+        });
+        await managingDirector.increaseAgreementCollateral(
+          0,
+          wbtc,
+          wbtcAmount,
+          { from: brokerRole }
+        );
+      });
+
       it("should revert if new collateral quantity is less than zero", async function() {
         const largeAmount = daiAmount.add(wad(10, 0));
         shouldFail.reverting(
-          this.compliance.collateralizationParamsAfterChange(
+          compliance.collateralizationParamsAfterChange(
             0,
             collateral,
             largeAmount
@@ -117,9 +152,7 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
         );
       });
       it("should emit an event with the correct total collateral value", async function() {
-        const {
-          logs
-        } = await this.compliance.collateralizationParamsAfterChange(
+        const { logs } = await compliance.collateralizationParamsAfterChange(
           0,
           collateral,
           amount
@@ -132,9 +165,7 @@ contract("Compliance", function([adminRole, brokerRole, user]) {
         });
       });
       it("should emit an event with the correct liquidation ratio", async function() {
-        const {
-          logs
-        } = await this.compliance.collateralizationParamsAfterChange(
+        const { logs } = await compliance.collateralizationParamsAfterChange(
           0,
           collateral,
           amount
