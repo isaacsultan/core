@@ -62,17 +62,6 @@ contract Compliance {
         collaterals.push(collateral);
     }
 
-    event CollateralDetails(bytes32 name, uint price, uint value, uint ratio);
-    event collatBreak1();
-    event collatBreak2();
-    event collatBreak3();
-
-    //function collateralizationParams(uint _agreementId) public returns (uint, uint) {
-    //    for (uint i = 0; i < collaterals.length; i++) {
-    //        emit collatBreak1();
-    //    }
-    //    return(0, 0);
-    //}
     function collateralizationParams(uint _agreementId) public returns (uint, uint) {
         uint totalCollateralValue;
         uint denom;
