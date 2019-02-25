@@ -42,6 +42,7 @@ contract Erc20TellerFactory {
     
     Erc20Teller[] public erc20Tellers;
     mapping(address => bool) public erc20TellerRegistry;
+    mapping(bytes32 => Erc20Teller) public tokenToTeller;
 
     constructor(address _adminRole) public {
         adminRole.add(_adminRole);
@@ -54,6 +55,7 @@ contract Erc20TellerFactory {
         Erc20Teller newContract = new Erc20Teller(_managingDirector, _collateralType, _collateralToken, _adminRole);
         erc20Tellers.push(newContract);
         erc20TellerRegistry[address(newContract)] = true;
+        tokenToTeller[_collateralType] = newContract;
         emit NewErc20Teller(_collateralType, _collateralToken);
     }
 
@@ -76,8 +78,6 @@ contract Erc20Teller {
     uint public constant ONE = 10**27;
 
     event Erc20TellerParams(bytes32 tellerType, address tokenAddress, uint liquidityRatio, uint liquidationFee);
-    event CollateralDeposit(address client, bytes32 tellerType, uint amount);
-    event CollateralWithdraw(address client, bytes32 tellerType, uint amount);
 
     constructor(address _managingDirector, bytes32 _collateralType, address _collateralToken, address _adminRole) public { //TODO: Restrict permision to factory
         managingDirector = IManagingDirector(_managingDirector);
@@ -96,14 +96,12 @@ contract Erc20Teller {
     function deposit(address _sender, uint _amount) public {
         require(collateralToken.transferFrom(_sender, address(this), _amount));
         managingDirector.increaseClientCollateralBalance(_sender, collateralType, _amount);
-        emit CollateralDeposit(_sender, collateralType, _amount);
     }
 
     function withdraw(address _sender, uint _amount) public {
         require(managingDirector.clientCollateral(_sender, collateralType) >= _amount);
         require(collateralToken.transfer(_sender, _amount));
         managingDirector.decreaseClientCollateralBalance(_sender, collateralType, _amount);
-        emit CollateralWithdraw(_sender, collateralType, _amount);
     }
 }
 
