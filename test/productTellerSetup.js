@@ -1,16 +1,16 @@
-const { BN, constants } = require("openzeppelin-test-helpers");
-const { wad, ray } = require("./fixedPoint");
+const { BN, constants } = require('openzeppelin-test-helpers');
+const { wad, ray } = require('./fixedPoint');
 
-const Liquidator = artifacts.require("Liquidator");
-const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
-const Broker = artifacts.require("Broker");
-const ManagingDirector = artifacts.require("ManagingDirector");
-const Compliance = artifacts.require("Compliance");
-const Ticker = artifacts.require("MockTicker");
-const ProductTellerFactory = artifacts.require("ProductTellerFactory");
-const Erc20TellerFactory = artifacts.require("Erc20TellerFactory");
-const EthTeller = artifacts.require("EthTeller");
-const AdvancedToken = artifacts.require("ERC777");
+const Liquidator = artifacts.require('Liquidator');
+const AdvancedTokenFactory = artifacts.require('AdvancedTokenFactory');
+const Broker = artifacts.require('Broker');
+const ManagingDirector = artifacts.require('ManagingDirector');
+const Compliance = artifacts.require('Compliance');
+const Ticker = artifacts.require('MockTicker');
+const ProductTellerFactory = artifacts.require('ProductTellerFactory');
+const Erc20TellerFactory = artifacts.require('Erc20TellerFactory');
+const EthTeller = artifacts.require('EthTeller');
+const AdvancedToken = artifacts.require('ERC777');
 
 const toBytes = web3.utils.utf8ToHex;
 
@@ -23,10 +23,10 @@ async function setup(adminRole, brokerRole) {
   const productTellerFactory = await ProductTellerFactory.new(adminRole);
 
   const managingDirector = await ManagingDirector.new(
-    toBytes("inverse"),
+    toBytes('inverse'),
     adminRole
   );
-  const liquidator = await Liquidator.new(managingDirector.address, constants.ZERO_ADDRESS); //TODO: Add real address
+  const liquidator = await Liquidator.new(managingDirector.address, brokerRole); // TODO: Add real address
   const ticker = await Ticker.new(managingDirector.address);
   const compliance = await Compliance.new(
     managingDirector.address,
@@ -46,25 +46,25 @@ async function setup(adminRole, brokerRole) {
   );
 
   const productToken = await AdvancedToken.new(
-    "PF-Delta",
-    "DLT",
+    'PF-Delta',
+    'DLT',
     granularity,
     approvedOperators,
     burnOperator,
     initialSupply,
-    toBytes(""),
-    toBytes(""),
+    toBytes(''),
+    toBytes(''),
     { from: adminRole }
   );
   const deltaToken = await AdvancedToken.new(
-    "PF-Delta",
-    "DLT",
+    'PF-Delta',
+    'DLT',
     granularity,
     approvedOperators,
     burnOperator,
     initialSupply,
-    toBytes(""),
-    toBytes(""),
+    toBytes(''),
+    toBytes(''),
     { from: adminRole }
   );
 
@@ -81,7 +81,7 @@ async function setup(adminRole, brokerRole) {
     liquidator,
     compliance,
     advancedTokenFactory,
-    ethTeller
+    ethTeller,
   ];
 }
 

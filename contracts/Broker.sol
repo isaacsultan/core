@@ -107,7 +107,7 @@ contract Broker {
     function agree(bytes32 _product) public returns (uint) {
         require(productToUnderlying[_product] != 0, "Product is unapproved");
         uint agreementId = managingDirector.originateAgreement(msg.sender, _product);
-        advancedTokenFactory.advancedTokens(0).authorizeOperator(msg.sender);  //TODO
+        //advancedTokenFactory.advancedTokens(0).authorizeOperator(msg.sender);  //TODO
         emit NewAgreement(msg.sender, agreementId, _product);
         return agreementId;
     }
@@ -117,9 +117,6 @@ contract Broker {
         managingDirector.modifyAgreementOwner(_agreementId, _to);
         emit AgreementTransfer(_agreementId, msg.sender, _to);
     }
-
-    event Break1();
-    event Break2();
 
     function offerCollateral(uint _agreementId, bytes32 _collateralType, uint _collateralChange) public payable { //TODO: return excess collateral?
         require(compliance.approvedCollaterals(_collateralType), "Collateral is Unapproved");

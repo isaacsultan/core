@@ -35,11 +35,11 @@ function wad(number, decimals) {
 }
 
 function ray(wadType) {
-  return wad.mul(new BN(10).pow(new BN(9)));
+  return new BN(wadType).mul(new BN(10).pow(new BN(9)));
 }
 
 function rad(wadType) {
-  return wad.mul(new BN(10).pow(new BN(27)));
+  return new BN(wadType).mul(new BN(10).pow(new BN(27)));
 }
 
 module.exports = { wad, rad, ray };

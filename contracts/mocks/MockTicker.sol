@@ -26,22 +26,22 @@ contract MockTicker {
     
     function getPrice(bytes32 _type) public returns (uint) {
         if (_type == "BTC") {
-            return 3500;
+            return 3500 * 10**18;
         }
         if (_type == "CTB") {
-            return 20;
+            return 20 * 10**18;
         }
         if (_type == "ETH") {
-            return 100;
+            return 100 * 10**18;
         }
         if (_type == "HTE") {
-            return 10;
+            return 10 * 10**18;
         }
         if (_type == "WBTC") {
-            return 3500;
+            return 3500 * 10**18;
         }
         if (_type == "DAI") {
-            return 1;
+            return 1 * 10**18;
         }
         return 0;
     } 

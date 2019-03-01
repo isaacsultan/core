@@ -9,8 +9,8 @@ const {
 } = require('openzeppelin-test-helpers');
 
 const toBytes = web3.utils.utf8ToHex;
-const {padRight} = web3.utils;
-const { rad, ray } = require('./fixedPoint');
+const { padRight } = web3.utils;
+const { wad, rad, ray } = require('./fixedPoint');
 
 const AdvancedTokenFactory = artifacts.require('AdvancedTokenFactory');
 const Broker = artifacts.require('Broker');
@@ -30,7 +30,11 @@ contract('Broker', function([_, adminRole, brokerRole, user, userTwo]) {
   const id = new BN(0);
   const eth = toBytes('ETH');
   const dai = toBytes('DAI');
-  let managingDirector; let ethTeller; let broker; let daiTeller; let daiToken;
+  let managingDirector;
+  let ethTeller;
+  let broker;
+  let daiTeller;
+  let daiToken;
   beforeEach(async function() {
     managingDirector = await ManagingDirector.new(
       toBytes('inverse'),

@@ -186,18 +186,18 @@ contract ProductTeller {
 
         uint256 newTargetPrice = ticker.getPrice(pt);
         uint256 newUnderlyingPrice = ticker.getPrice(broker.productToUnderlying(pt));
-            
+
         uint256 dd = Economics.dynamicDebt(up, newUnderlyingPrice, tp, newTargetPrice, pd);
         uint256 diff = DSMath.sub(dd, _amount); 
+
         product.operatorBurn(msg.sender, _amount, "", "");
-        delta.operatorBurn(msg.sender, _amount, "", ""); //TODO: Check
 
         if (diff > 0) {
-            liquidator.resetTime(_agreementId);
+            //liquidator.resetTime(_agreementId); //TODO: 
             managingDirector.resetAgreement(_agreementId, diff, newTargetPrice, newUnderlyingPrice);
-        } else {
-           managingDirector.liquidateAgreement(_agreementId);
-        }
+        }//else {
+        //    managingDirector.liquidateAgreement(_agreementId); //TODO:
+        //}
         emit ProductPay(productType, msg.sender, _agreementId, _amount);
     }
 
