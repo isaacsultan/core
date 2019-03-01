@@ -36,7 +36,7 @@ contract IManagingDirector {
     function agreements(uint) public view returns (bytes32, uint, uint, uint);
     function liquidateAgreement(uint) public;
     function collaterals(bytes32) public view returns (uint, uint, uint);
-    function modifyAgreementProduct(uint, uint256) public;
+    function mintAgreementProduct(uint, uint, uint, uint) public;
     function agreementCollateralAmount(uint, bytes32) public view returns (uint);
 }
 
@@ -114,7 +114,7 @@ contract ProductTeller {
     using Roles for Roles.Role;
     Roles.Role private adminRole;
     
-    uint productFee; //ray
+    uint public productFee; //wad
     
     bytes32 public productType;
     IManagingDirector public managingDirector;
@@ -127,6 +127,7 @@ contract ProductTeller {
 
     event ProductWithdraw(bytes32 productType, address client, uint agreementId, uint amount, uint feePaid);
     event ProductPay(bytes32 productType, address client, uint agreementId, uint amount);
+    event ProductFee(bytes32 productType, uint fee);
 
     constructor
     (
@@ -154,21 +155,26 @@ contract ProductTeller {
     function setProductFee(uint _productFee) public {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         productFee = _productFee;
+        emit ProductFee(productType, _productFee);
     }
 
-    function withdraw(uint256 _agreementId, uint256 _amount) public {
-        (, uint pd, uint tp,) =
+    function withdraw(uint256 _agreementId, uint256 _amount) public { //TODO: When to set target price, underlying price?
+        (bytes32 pt, uint pd, ,) =
             managingDirector.agreements(_agreementId);
         require(pd == 0, "Product already minted");
 
-         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
-        require(Economics.collateralized(liquidationRatio, totalCollateralValue, _amount), "Uncollateralized!");
+        (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
+        require(totalCollateralValue > 0, "Agreement is uncollateralized");
+        require(Economics.collateralized(liquidationRatio, totalCollateralValue, _amount), "Agreement has insufficient collateral");
 
-        uint deltaFee = DSMath.rmul(DSMath.rmul(_amount, tp), productFee);
+        uint underlyingPrice = ticker.getPrice(pt);
+        uint targetPrice = ticker.getPrice(broker.productToUnderlying(pt));
+
+        uint deltaFee = DSMath.wmul(DSMath.wmul(_amount, targetPrice), productFee);
         delta.operatorBurn(msg.sender, deltaFee, "", ""); 
         
         product.mint(msg.sender, _amount, "");
-        managingDirector.modifyAgreementProduct(_agreementId, _amount);
+        managingDirector.mintAgreementProduct(_agreementId, _amount, targetPrice, underlyingPrice);
         
         emit ProductWithdraw(productType, msg.sender, _agreementId, _amount, deltaFee);
     }

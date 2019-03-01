@@ -1,4 +1,5 @@
-const { BN } = require("openzeppelin-test-helpers");
+const { BN, constants } = require("openzeppelin-test-helpers");
+const { wad, ray } = require("./fixedPoint");
 
 const Liquidator = artifacts.require("Liquidator");
 const AdvancedTokenFactory = artifacts.require("AdvancedTokenFactory");
@@ -17,7 +18,7 @@ async function setup(adminRole, brokerRole) {
   const granularity = new BN(18);
   const burnOperator = adminRole;
   const approvedOperators = [adminRole];
-  const initialSupply = new BN(100000000);
+  const initialSupply = new wad(100000, 0);
 
   const productTellerFactory = await ProductTellerFactory.new(adminRole);
 
@@ -25,7 +26,7 @@ async function setup(adminRole, brokerRole) {
     toBytes("inverse"),
     adminRole
   );
-  const liquidator = await Liquidator.new(managingDirector.address);
+  const liquidator = await Liquidator.new(managingDirector.address, constants.ZERO_ADDRESS); //TODO: Add real address
   const ticker = await Ticker.new(managingDirector.address);
   const compliance = await Compliance.new(
     managingDirector.address,
@@ -44,27 +45,31 @@ async function setup(adminRole, brokerRole) {
     adminRole
   );
 
-  await advancedTokenFactory.makeAdvancedToken(
+  const productToken = await AdvancedToken.new(
     "PF-Delta",
     "DLT",
     granularity,
     approvedOperators,
     burnOperator,
     initialSupply,
+    toBytes(""),
+    toBytes(""),
     { from: adminRole }
   );
-  await advancedTokenFactory.makeAdvancedToken(
-    "PF-ConverseTrackingBitcoin",
-    "CTB",
+  const deltaToken = await AdvancedToken.new(
+    "PF-Delta",
+    "DLT",
     granularity,
     approvedOperators,
     burnOperator,
     initialSupply,
+    toBytes(""),
+    toBytes(""),
     { from: adminRole }
   );
 
-  const productTokenAddress = await advancedTokenFactory.advancedTokens(1);
-  const deltaTokenAddress = await advancedTokenFactory.advancedTokens(0);
+  const productTokenAddress = productToken.address;
+  const deltaTokenAddress = deltaToken.address;
 
   return [
     productTellerFactory,
@@ -74,7 +79,9 @@ async function setup(adminRole, brokerRole) {
     deltaTokenAddress,
     ticker,
     liquidator,
-    compliance
+    compliance,
+    advancedTokenFactory,
+    ethTeller
   ];
 }
 

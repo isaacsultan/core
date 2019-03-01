@@ -81,14 +81,14 @@ contract ERC777 is ERC20Burnable, ERC20Mintable {
         ) public {
             name = _name;
             symbol = _symbol;
-            _mint(msg.sender, _initialSupply);
+            _mint(msg.sender, _initialSupply); //address: AdvancedTokenFactory 
         }
 
     function mint(address _to, uint _amount, bytes memory _data) public {
         _mint(_to, _amount);
     }
 
-    function operatorBurn(address _from, uint _amount, bytes memory _data) public {
+    function operatorBurn(address _from, uint _amount, bytes memory _data, bytes memory _operatorData) public {
         burnFrom(_from, _amount);
     }
 
