@@ -156,7 +156,7 @@ contract Erc20TradingFloor {
         uint collateralPrice = ticker.getPrice(collateralType);
         uint amountAfforded = DSMath.wdiv(DSMath.wmul(ethPrice, msg.value), collateralPrice);
         while (pooledAmount < amountAfforded) {
-            Liquidation memory liquidation = list.step(liquidationCounter, true);
+            Liquidation memory liquidation = liquidations[list.step(liquidationCounter, true)];
             if (liquidation.amount >= amountAfforded) {
                 require(collateralToken.transfer(msg.sender, _amount));
                 managingDirector.decreaseAgreementCollateral(liquidation.id, collateralType, amountAfforded);
