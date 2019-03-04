@@ -26,7 +26,11 @@ async function setup(adminRole, brokerRole) {
     toBytes('inverse'),
     adminRole
   );
-  const liquidator = await Liquidator.new(managingDirector.address, brokerRole); // TODO: Add real address
+  const liquidator = await Liquidator.new(
+    managingDirector.address,
+    brokerRole,
+    brokerRole
+  ); // TODO: Add real address
   const ticker = await Ticker.new(managingDirector.address);
   const compliance = await Compliance.new(
     managingDirector.address,
