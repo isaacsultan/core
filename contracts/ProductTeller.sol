@@ -36,7 +36,7 @@ contract IManagingDirector {
     function agreements(uint) public view returns (bytes32, uint, uint, uint);
     function liquidateAgreement(uint) public;
     function collaterals(bytes32) public view returns (uint, uint, uint);
-    function modifyAgreementProduct(uint, uint256) public;
+    function mintAgreementProduct(uint, uint, uint, uint) public;
     function agreementCollateralAmount(uint, bytes32) public view returns (uint);
 }
 
@@ -114,7 +114,7 @@ contract ProductTeller {
     using Roles for Roles.Role;
     Roles.Role private adminRole;
     
-    uint productFee; //ray
+    uint public productFee; //wad
     
     bytes32 public productType;
     IManagingDirector public managingDirector;
@@ -125,7 +125,9 @@ contract ProductTeller {
     ICompliance public compliance;
     IBroker public broker;
 
-    event LiquidationRatio(uint256 agreementId, uint256 ratio);
+    event ProductWithdraw(bytes32 productType, address client, uint agreementId, uint amount, uint feePaid);
+    event ProductPay(bytes32 productType, address client, uint agreementId, uint amount);
+    event ProductFee(bytes32 productType, uint fee);
 
     constructor
     (
@@ -153,44 +155,50 @@ contract ProductTeller {
     function setProductFee(uint _productFee) public {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         productFee = _productFee;
+        emit ProductFee(productType, _productFee);
     }
 
-    function withdraw(uint256 _agreementId, uint256 amount) public {
-        (, uint pd, uint tp,) =
+    function withdraw(uint256 _agreementId, uint256 _amount) public { //TODO: When to set target price, underlying price?
+        (bytes32 pt, uint pd, ,) =
             managingDirector.agreements(_agreementId);
-
         require(pd == 0, "Product already minted");
 
-        uint deltaFee = DSMath.rmul(DSMath.rmul(amount, tp), productFee);
-        delta.operatorBurn(msg.sender, deltaFee, "", ""); 
-
         (uint liquidationRatio, uint totalCollateralValue) = compliance.collateralizationParams(_agreementId);
-        emit LiquidationRatio(_agreementId, liquidationRatio);
+        require(totalCollateralValue > 0, "Agreement is uncollateralized");
+        require(Economics.collateralized(liquidationRatio, totalCollateralValue, _amount), "Agreement has insufficient collateral");
 
-        require(Economics.collateralized(liquidationRatio, totalCollateralValue, amount), "Uncollateralized!");
+        uint underlyingPrice = ticker.getPrice(pt);
+        uint targetPrice = ticker.getPrice(broker.productToUnderlying(pt));
+
+        uint deltaFee = DSMath.wmul(DSMath.wmul(_amount, targetPrice), productFee);
+        delta.operatorBurn(msg.sender, deltaFee, "", ""); 
         
-        product.mint(msg.sender, amount, "");
-        managingDirector.modifyAgreementProduct(_agreementId, amount);
+        product.mint(msg.sender, _amount, "");
+        managingDirector.mintAgreementProduct(_agreementId, _amount, targetPrice, underlyingPrice);
+        
+        emit ProductWithdraw(productType, msg.sender, _agreementId, _amount, deltaFee);
     }
 
-    function pay(uint256 agreementId, uint256 amount) public {
+    function pay(uint256 _agreementId, uint256 _amount) public {
         
         (bytes32 pt, uint pd, uint tp, uint up) =
-            managingDirector.agreements(agreementId);
+            managingDirector.agreements(_agreementId);
 
         uint256 newTargetPrice = ticker.getPrice(pt);
         uint256 newUnderlyingPrice = ticker.getPrice(broker.productToUnderlying(pt));
-            
+
         uint256 dd = Economics.dynamicDebt(up, newUnderlyingPrice, tp, newTargetPrice, pd);
-        uint256 diff = DSMath.sub(dd, amount); 
-        product.operatorBurn(msg.sender, amount, "", "");
+        uint256 diff = DSMath.sub(dd, _amount); 
+
+        product.operatorBurn(msg.sender, _amount, "", "");
+
         if (diff > 0) {
-            delta.operatorBurn(msg.sender, amount, "", "");
-            liquidator.resetTime(agreementId);
-            managingDirector.resetAgreement(agreementId, diff, newTargetPrice, newUnderlyingPrice);
-        } else {
-           managingDirector.liquidateAgreement(agreementId);
-        }
+            //liquidator.resetTime(_agreementId); //TODO: 
+            managingDirector.resetAgreement(_agreementId, diff, newTargetPrice, newUnderlyingPrice);
+        }//else {
+        //    managingDirector.liquidateAgreement(_agreementId); //TODO:
+        //}
+        emit ProductPay(productType, msg.sender, _agreementId, _amount);
     }
 
 }

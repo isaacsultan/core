@@ -20,46 +20,49 @@ pragma solidity ^0.5.0;
 
 
 contract IManagingDirector {
-
+    function agreements(uint) public view returns (bytes32, uint, uint, uint);
+    function agreementCollateral(uint, bytes32) public view returns (uint);
+    function liquidateAgreement(uint) public;
 }
 
-// interface IManagingDirector {
-//     function liquidateCdd(bytes32 i, bytes32 u, bytes32 v, bytes32 w, int dink, int dart) public;
-// }
+
+contract ITradingFloorFactory {
+    function tradingFloors(bytes32) public view returns (address);
+    function collateralToTradingFloor(bytes32) public view returns (address);
+}
 
 
-// interface TradingFloor {
-//     function sellCollateral();
-// }
+contract IErc20TradingFloor {
+    function addToPool(uint, uint) public;
+}
+
+
+contract IEthTradingFloor {
+    function addToPool(uint, uint) public;
+}
+
+
+contract IErc20TradingFloorFactory {
+    function collateralToErc20TradingFloor(bytes32) public view returns (IErc20TradingFloor);
+}
 
 
 contract Liquidator {
 
-    // struct Cdd {
-    //     address liquidator;
-    //     uint256 liqudationQuantity;
-    // }
-
-    // struct CollateralSale {
-    //     bytes32 collateralType;
-    //     bytes32 cdd;
-    //     uint256 collateralQuantity;
-    //     uint256 debtOutstanding;
-    // }
-
-    // mapping(bytes32 => Cdd) public cdds;
-    // mapping(uint256 => CollateralSale) public collateralSales;
-    // uint256 public collateralSaleCounter;
-    mapping(uint256 => uint256) public liquidationTimes;
-
-
     IManagingDirector public managingDirector;
+    IErc20TradingFloorFactory public erc20TradingFloorFactory;
+    IEthTradingFloor public ethTradingFloor;
+
+    bytes32[] public collaterals;
+    mapping(uint256 => uint256) public liquidationTimes;
 
     event ResetLiquidaton(uint agreementId, uint time);
 
-    constructor(address _managingDirector)
+    constructor(address _managingDirector, address _tradingFloorFactory, address _ethTradingFloor)
     public {
         managingDirector = IManagingDirector(_managingDirector);
+        ethTradingFloor = IEthTradingFloor(_ethTradingFloor);
+        erc20TradingFloorFactory = IErc20TradingFloorFactory(_tradingFloorFactory);
     }
 
     function resetTime(uint agreementId) public {
@@ -67,23 +70,17 @@ contract Liquidator {
         emit ResetLiquidaton(agreementId, now);
     }
 
-
-    // function initiateCddLiquidation(bytes32 collateralType, bytes32 cdd) public returns (uint id) {
-        
-    //     (uint lr, uint tcb, uint tpd) = managingDirector.collateralTypes(collateralType);
-    //     (uint cb, uint pd, uint ir) = managingDirector.cdds(collateralType, cdd);
-    //     uint256 debt = 0; //todo
-
-    //     address vow = address(this); //todo
-
-    //     managingDirector.liquidateCdd(collateralType, bytes32(address(this)), bytes32(address(vow)), cb, pd);
-
-    //     collateralSales[collateralSaleCounter] = CollateralSale(collateralType, cdd, cb, debt);
-    //     return collateralSaleCounter++;
-    // }
-
-    // function sellCddCollateral(uint256 id, uint256 eth) public {
-
-        
-    // }
+    function initiateLiquidation(uint256 _id) public {
+        for (uint i = 0; i < collaterals.length; i++) {
+            bytes32 collateral = collaterals[i];
+            uint amount = managingDirector.agreementCollateral(_id, collateral);
+            if (amount > 0) {
+                if (collateral == "ETH") {
+                    ethTradingFloor.addToPool(_id, amount);
+                } else {
+                    IErc20TradingFloor(erc20TradingFloorFactory.collateralToErc20TradingFloor(collateral)).addToPool(_id, amount);
+                }
+            }
+        }
+    }
 }

@@ -36,7 +36,7 @@ library Economics {
         pure 
         returns (bool)
     {
-        return liquidationRatio >= DSMath.ray((DSMath.wdiv(collateralBalance, productDebt))); 
+        return liquidationRatio <= DSMath.ray((DSMath.wdiv(collateralBalance, productDebt))); 
     }
 
      function dynamicDebt

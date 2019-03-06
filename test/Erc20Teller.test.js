@@ -7,93 +7,121 @@ const {
   constants,
   balance,
   send,
-  ether
-} = require("openzeppelin-test-helpers");
+  ether,
+} = require('openzeppelin-test-helpers');
+
 const toBytes = web3.utils.utf8ToHex;
-const padRight = web3.utils.padRight;
-const { wad, ray } = require("./fixedPoint");
+const {padRight} = web3.utils;
+const { wad, ray } = require('./fixedPoint');
 
-const ManagingDirector = artifacts.require("ManagingDirector");
-const Erc20Teller = artifacts.require("Erc20Teller");
-const BasicTokenFactory = artifacts.require("BasicTokenFactory");
-const BasicToken = artifacts.require("ERC777");
+const ManagingDirector = artifacts.require('ManagingDirector');
+const Erc20Teller = artifacts.require('Erc20Teller');
+const ERC20Mock = artifacts.require('ERC20Mock');
 
-contract("Erc20Teller", function([_, adminRole, user]) {
-  const dai = toBytes("DAI");
-  let daiAddress;
-  const amount = wad(1, 0);
+contract('Erc20Teller', function([_, adminRole, user, daiAddress]) {
+  const dai = toBytes('DAI');
+  const amount = wad(2, 0);
+  const smallerAmount = wad(1, 0);
+  let convertedAmount; let convertedSmallerAmount;
   beforeEach(async function() {
+    this.daiToken = await ERC20Mock.new(daiAddress, 100 * 10 ** 6);
     this.managingDirector = await ManagingDirector.new(
-      toBytes("inverse"),
+      toBytes('inverse'),
       adminRole
     );
-    this.basicTokenFactory = await BasicTokenFactory.new(adminRole);
-    const approvedOperators = [adminRole];
-    await this.basicTokenFactory.makeBasicToken(
-      toBytes("MakerDao-DAI"),
-      dai,
-      new BN(18),
-      approvedOperators,
-      adminRole,
-      new BN(100000000),
-      { from: adminRole }
-    );
-    const daiAddress = await this.basicTokenFactory.basicTokens(0);
-    this.daiToken = await BasicToken.at(daiAddress);
-
     this.erc20Teller = await Erc20Teller.new(
       this.managingDirector.address,
       dai,
-      daiAddress,
+      this.daiToken.address,
       adminRole
     );
+    convertedAmount = web3.utils.fromWei(amount);
+    convertedSmallerAmount = web3.utils.fromWei(smallerAmount);
+
     await this.managingDirector.addBrokerRole(this.erc20Teller.address, {
-      from: adminRole
+      from: adminRole,
+    });
+    await this.daiToken.approve(user, convertedAmount, { from: daiAddress });
+    await this.daiToken.transferFrom(daiAddress, user, convertedAmount, {
+      from: user,
     });
   });
-  describe("setParameters()", function() {
+  describe('setParameters()', function() {
     const liquidityRatio = ray(15, 1);
     const liquidationFee = ray(2, 2);
-    it("should revert if not called by an admin", async function() {
+    it('should revert if not called by an admin', async function() {
       shouldFail.reverting(
         this.erc20Teller.setParameters(liquidityRatio, liquidationFee, {
-          from: user
+          from: user,
         })
       );
     });
-    it("should allow admin to set liquidity parameters", async function() {
+    it('should allow admin to set liquidity parameters', async function() {
       const { logs } = await this.erc20Teller.setParameters(
         liquidityRatio,
         liquidationFee,
         {
-          from: adminRole
+          from: adminRole,
         }
       );
-      expectEvent.inLogs(logs, "Erc20TellerParams", {
+      expectEvent.inLogs(logs, 'Erc20TellerParams', {
         tellerType: padRight(dai, 64),
         tokenAddress: this.daiToken.address,
-        liquidityRatio: liquidityRatio,
-        liquidationFee: liquidationFee
+        liquidityRatio,
+        liquidationFee,
       });
     });
   });
-  describe("deposit()", function() {
-    it("should revert if tokens are not approved for transfer", async function() {
-      shouldFail.reverting(this.erc20Teller.deposit(amount, { from: user }));
+  describe('deposit()', function() {
+    it('should revert if tokens are not approved for transfer', async function() {
+      shouldFail.reverting(this.erc20Teller.deposit(user, convertedAmount));
     });
-    context("tokens are approved by client", function() {
+    context('tokens are approved by client', function() {
       beforeEach(async function() {
-        await this.daiToken.approve(this.erc20Teller.address, amount, { from: user });
+        await this.daiToken.approve(this.erc20Teller.address, convertedAmount, {
+          from: user,
+        });
       });
-      it("should transfer the collateral token to CollateralTeller");
-      it("should increase the users collateral balance");
+      it('should transfer the collateral token to CollateralTeller', async function() {
+        await this.erc20Teller.deposit(user, convertedAmount);
+        (await this.daiToken.balanceOf(
+          this.erc20Teller.address
+        )).should.be.bignumber.equal(convertedAmount);
+      });
+      it('should increase the users collateral balance', async function() {
+        await this.erc20Teller.deposit(user, convertedAmount);
+        (await this.managingDirector.clientCollateral(
+          user,
+          dai
+        )).should.be.bignumber.equal(convertedAmount);
+      });
     });
   });
-  describe("withdraw()", function() {
-    it("should revert if there not sufficient collateral", async function() {
-      shouldFail.reverting(this.erc20Teller.withdraw(amount), { from: user });
+  describe('withdraw()', function() {
+    beforeEach(async function() {
+      await this.daiToken.approve(this.erc20Teller.address, convertedAmount, {
+        from: user,
+      });
+      await this.erc20Teller.deposit(user, convertedAmount);
     });
-    it("should transfer the collateral token to the user");
-    it("should decrease the users collateral balance");
+    it('should revert if there not sufficient collateral', async function() {
+      const largerAmount = new BN(5);
+      shouldFail.reverting(this.erc20Teller.withdraw(user, largerAmount));
+    });
+    it('should transfer the collateral token to the user', async function() {
+      await this.erc20Teller.withdraw(user, convertedSmallerAmount);
+
+      (await this.daiToken.balanceOf(user)).should.be.bignumber.equal(
+        new BN(1)
+      );
+    });
+    it('should decrease the users collateral balance', async function() {
+      await this.erc20Teller.withdraw(user, convertedSmallerAmount);
+
+      (await this.managingDirector.clientCollateral(
+        user,
+        dai
+      )).should.be.bignumber.equal(new BN(1));
+    });
   });
 });

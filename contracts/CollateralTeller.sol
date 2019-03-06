@@ -24,6 +24,7 @@ import "./Math.sol";
 
 contract IErc20 {
     function transferFrom(address, address, uint) public returns (bool);
+    function transfer(address to, uint256 value) public returns (bool);
 }
 
 
@@ -40,6 +41,7 @@ contract Erc20TellerFactory {
     
     Erc20Teller[] public erc20Tellers;
     mapping(address => bool) public erc20TellerRegistry;
+    mapping(bytes32 => Erc20Teller) public tokenToTeller;
 
     constructor(address _adminRole) public {
         adminRole.add(_adminRole);
@@ -52,6 +54,7 @@ contract Erc20TellerFactory {
         Erc20Teller newContract = new Erc20Teller(_managingDirector, _collateralType, _collateralToken, _adminRole);
         erc20Tellers.push(newContract);
         erc20TellerRegistry[address(newContract)] = true;
+        tokenToTeller[_collateralType] = newContract;
         emit NewErc20Teller(_collateralType, _collateralToken);
     }
 
@@ -74,7 +77,7 @@ contract Erc20Teller {
     uint public constant ONE = 10**27;
 
     event Erc20TellerParams(bytes32 tellerType, address tokenAddress, uint liquidityRatio, uint liquidationFee);
-    
+
     constructor(address _managingDirector, bytes32 _collateralType, address _collateralToken, address _adminRole) public { //TODO: Restrict permision to factory
         managingDirector = IManagingDirector(_managingDirector);
         collateralType = _collateralType;
@@ -89,15 +92,15 @@ contract Erc20Teller {
         emit Erc20TellerParams(collateralType, address(collateralToken), liquidityRatio, liquidationFee);
     }
     
-    function deposit(uint _amount) public {
-        require(collateralToken.transferFrom(msg.sender, address(this), _amount));
-        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, _amount);
+    function deposit(address _sender, uint _amount) public {
+        require(collateralToken.transferFrom(_sender, address(this), _amount));
+        managingDirector.increaseClientCollateralBalance(_sender, collateralType, _amount);
     }
 
-    function withdraw(uint _amount) public {
-        require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
-        require(collateralToken.transferFrom(address(this), msg.sender, _amount));
-        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
+    function withdraw(address _sender, uint _amount) public {
+        require(managingDirector.clientCollateral(_sender, collateralType) >= _amount);
+        require(collateralToken.transfer(_sender, _amount));
+        managingDirector.decreaseClientCollateralBalance(_sender, collateralType, _amount);
     }
 }
 
@@ -128,13 +131,13 @@ contract EthTeller {
         emit EthTellerParams(collateralType, liquidityRatio, liquidationFee);
     }
 
-    function deposit() public payable {
-        managingDirector.increaseClientCollateralBalance(msg.sender, collateralType, msg.value);
+    function deposit(address _sender) public payable {
+        managingDirector.increaseClientCollateralBalance(_sender, collateralType, msg.value);
     }
 
-    function withdraw(uint _amount) public {
-        require(managingDirector.clientCollateral(msg.sender, collateralType) >= _amount);
-        msg.sender.transfer(_amount);
-        managingDirector.decreaseClientCollateralBalance(msg.sender, collateralType, _amount);
+    function withdraw(address payable _sender, uint _amount) public {
+        require(managingDirector.clientCollateral(_sender, collateralType) >= _amount);
+        _sender.transfer(_amount);
+        managingDirector.decreaseClientCollateralBalance(_sender, collateralType, _amount);
     }
 }

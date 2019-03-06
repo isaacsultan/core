@@ -47,8 +47,10 @@ contract Compliance {
     }
 
     Collateral[] public collaterals;
+    mapping(bytes32 => bool) public approvedCollaterals;
     
-    event CollateralizationParameters(uint id, uint liquidationRatio, uint totalCollateralValue);
+    event CollateralDetails(bytes32 name, uint price, uint value, uint ratio);
+    event CollateralizationParameters(uint id, uint liquidationRatio, uint totalCollateralValue, uint denom);
 
     constructor(address _managingDirector, address _ticker, address _adminRole) public {
         managingDirector = IManagingDirector(_managingDirector);
@@ -60,30 +62,32 @@ contract Compliance {
         require(adminRole.has(msg.sender), "DOES_NOT_HAVE_ADMIN_ROLE");
         Collateral memory collateral = Collateral(_type, _ratio);
         collaterals.push(collateral);
+        approvedCollaterals[_type] = true;
     }
 
-
     function collateralizationParams(uint _agreementId) public returns (uint, uint) {
-        uint totalCollateralValue; 
+        uint totalCollateralValue;
         uint denom;
         for (uint i = 0; i < collaterals.length; i++) {
             Collateral memory clt = collaterals[i];
+
             if (managingDirector.agreementCollateral(_agreementId, clt.name) > 0) {
                 (uint price, uint value) = collateralValue(_agreementId, clt.name);
+                emit CollateralDetails(clt.name, price, value, clt.ratio);
                 denom = DSMath.add(denom, DSMath.rdiv(price, clt.ratio));
                 totalCollateralValue = DSMath.add(totalCollateralValue, value); 
             }
         }
-        uint liquidationRatio = DSMath.wdiv(totalCollateralValue, denom);
-        emit CollateralizationParameters(_agreementId, liquidationRatio, totalCollateralValue);
-
+        uint liquidationRatio = denom != 0 ? DSMath.rdiv(totalCollateralValue, denom) : 0;
+        
+        emit CollateralizationParameters(_agreementId, liquidationRatio, totalCollateralValue, denom);
         return (liquidationRatio, totalCollateralValue);
     }
 
     function collateralizationParamsAfterChange(uint _agreementId, bytes32 _collateralType, uint _amount) 
     public
     returns (uint, uint) {
-        uint totalCollateralValue; 
+        uint totalCollateralValue;
         uint denom;
         uint price;
         uint value;
@@ -96,15 +100,17 @@ contract Compliance {
                 } else {
                     (price, value) = collateralValue(_agreementId, clt.name);
                 }
+
                 denom = DSMath.add(denom, DSMath.rdiv(price, clt.ratio));
                 totalCollateralValue = DSMath.add(totalCollateralValue, value); 
             }
         }
-        uint liquidationRatio = DSMath.wdiv(totalCollateralValue, denom);
-        emit CollateralizationParameters(_agreementId, liquidationRatio, totalCollateralValue);
+        uint liquidationRatio = denom != 0 ? DSMath.rdiv(totalCollateralValue, denom) : 0;
+        emit CollateralizationParameters(_agreementId, liquidationRatio, totalCollateralValue, denom);
 
         return (liquidationRatio, totalCollateralValue);
     }
+
 
     function collateralValue(uint _agreementId, bytes32 _collateral) internal returns (uint, uint) {
         uint quantity = managingDirector.agreementCollateral(_agreementId, _collateral);
