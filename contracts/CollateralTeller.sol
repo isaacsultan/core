@@ -24,7 +24,6 @@ import "./Math.sol";
 
 contract IErc20 {
     function transferFrom(address, address, uint) public returns (bool);
-    function approve(address, uint256) public returns (bool);
     function transfer(address to, uint256 value) public returns (bool);
 }
 

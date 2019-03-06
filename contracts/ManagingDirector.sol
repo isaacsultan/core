@@ -36,7 +36,7 @@ contract ManagingDirector {
 
     struct Agreement {
         bytes32 product; 
-        uint256 productDebt; // wad
+        uint256 productDebt; // wad TODO: make consistant
         uint256 targetPrice; // wad
         uint256 underlyingPrice; // wad
     }
