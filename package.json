@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "chainlink": "github:smartcontractkit/chainlink",
-    "openzeppelin-solidity": "^2.1.2",
+    "openzeppelin-solidity": "^2.1.2"
   },
   "devDependencies": {
     "openzeppelin-test-helpers": "^0.1.2",
