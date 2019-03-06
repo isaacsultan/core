@@ -5,30 +5,35 @@ const {
   constants,
   balance,
   send,
-  ether
-} = require("openzeppelin-test-helpers");
+  ether,
+} = require('openzeppelin-test-helpers');
+
 const toBytes = web3.utils.utf8ToHex;
-const padRight = web3.utils.padRight;
-const { wad, ray } = require("./fixedPoint");
+const {padRight} = web3.utils;
+const { wad, ray } = require('./fixedPoint');
 
-const ManagingDirector = artifacts.require("ManagingDirector");
-const Erc20TellerFactory = artifacts.require("Erc20TellerFactory");
-const ERC20Mock = artifacts.require("ERC20Mock");
+const ManagingDirector = artifacts.require('ManagingDirector');
+const Erc20TellerFactory = artifacts.require('Erc20TellerFactory');
+const ERC20Mock = artifacts.require('ERC20Mock');
 
-
-contract("Erc20TellerFactory", function([_, adminRole, brokerRole, daiAddress]) {
-  const collateralType = toBytes("DAI");
+contract('Erc20TellerFactory', function([
+  _,
+  adminRole,
+  brokerRole,
+  daiAddress,
+]) {
+  const collateralType = toBytes('DAI');
   beforeEach(async function() {
     this.daiToken = await ERC20Mock.new(daiAddress, 100 * 10 ** 6);
 
     this.managingDirector = await ManagingDirector.new(
-      toBytes("inverse"),
+      toBytes('inverse'),
       adminRole
     );
     this.erc20TellerFactory = await Erc20TellerFactory.new(adminRole);
   });
-  describe("#makeErc20Teller", function() {
-    it("reverts if not called by an admin", async function() {
+  describe('#makeErc20Teller', function() {
+    it('reverts if not called by an admin', async function() {
       shouldFail.reverting(
         this.erc20TellerFactory.makeErc20Teller(
           collateralType,
@@ -38,7 +43,7 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole, daiAddress]) 
         )
       );
     });
-    it("adds a new token", async function() {
+    it('adds a new token', async function() {
       const { logs } = await this.erc20TellerFactory.makeErc20Teller(
         collateralType,
         this.daiToken.address,
@@ -46,14 +51,14 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole, daiAddress]) 
         adminRole,
         { from: adminRole }
       );
-      expectEvent.inLogs(logs, "NewErc20Teller", {
+      expectEvent.inLogs(logs, 'NewErc20Teller', {
         collateralType: padRight(collateralType, 64),
-        collateralToken: this.daiToken.address
+        collateralToken: this.daiToken.address,
       });
     });
   });
-  describe("#verify", function() {
-    it("should check if a token contract exists", async function() {
+  describe('#verify', function() {
+    it('should check if a token contract exists', async function() {
       await this.erc20TellerFactory.makeErc20Teller(
         collateralType,
         this.daiToken.address,
@@ -66,4 +71,3 @@ contract("Erc20TellerFactory", function([_, adminRole, brokerRole, daiAddress]) 
     });
   });
 });
-

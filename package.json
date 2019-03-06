@@ -15,9 +15,9 @@
   "dependencies": {
     "chainlink": "github:smartcontractkit/chainlink",
     "openzeppelin-solidity": "^2.1.2",
-    "openzeppelin-test-helpers": "^0.1.2"
   },
   "devDependencies": {
+    "openzeppelin-test-helpers": "^0.1.2",
     "ganache-cli": "^6.4.1",
     "truffle": "^5.0.4"
   },
@@ -38,3 +38,4 @@
   },
   "homepage": "https://github.com/partial-f/core#readme"
 }
+

@@ -245,7 +245,7 @@ contract('Broker', function([_, adminRole, brokerRole, user, userTwo]) {
           amount,
         });
       });
-    });
+
     it('should revert if agreement already fully collateralized', async function() {
       await broker.offerCollateral(id, eth, new BN(90), {
         from: user,
@@ -341,7 +341,6 @@ contract('Broker', function([_, adminRole, brokerRole, user, userTwo]) {
           amount: smallerAmount,
         });
       });
-    });
     context('collateral type is ERC20', function() {
       beforeEach(async function() {
         await daiToken.approve(daiTeller.address, amount, { from: user });
