@@ -7,7 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "truffle test",
+    "pretest": "tsc -p .",
+    "test": "nyc mocha",
+    "posttest": "nyc report --reporter=json",
     "compile": "truffle compile"
   },
   "author": "Isaac Sultan",
@@ -17,8 +19,10 @@
     "openzeppelin-solidity": "^2.1.2"
   },
   "devDependencies": {
-    "openzeppelin-test-helpers": "^0.1.2",
+    "codecov": "^3.2.0",
     "ganache-cli": "^6.4.1",
+    "nyc": "^13.3.0",
+    "openzeppelin-test-helpers": "^0.1.2",
     "truffle": "^5.0.4"
   },
   "repository": {
