@@ -40,5 +40,5 @@ jobs:
 
       - run: npm test
 
-      - covecov/upload:
+      - codecov/upload:
           file: coverage/*.json
